@@ -86,3 +86,5 @@ text sekou_navi/ ├ app.py ├ products.db ├ images/ ├ temp_images/ ├ ai_
 
 施工現場では、型番確認や施工説明書検索に時間がかかる課題があります。  
 本アプリは、OCR・画像検索・AI推定を活用し、現場での検索や登録作業を高速化することを目的として開発しています。
+=======
+# sekou-navi
