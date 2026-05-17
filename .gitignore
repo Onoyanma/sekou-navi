@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+
+products.db
+images/
+temp_images/
+ai_search_images/
+normal_search_images/
+
+.DS_Store
