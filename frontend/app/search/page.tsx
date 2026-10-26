@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Clock,
-  Image,
+  Image as ImageIcon,
   Images,
   Loader2,
   Package,
@@ -18,6 +18,7 @@ import {
   toProduct,
   type Product,
 } from "@/lib/products";
+import { apiUrl } from "@/lib/api";
 
 type SimilarImageResult = {
   similarity: number;
@@ -66,7 +67,11 @@ function SearchContent() {
   const { darkMode } = useTheme();
   const [keyword, setKeyword] = useState("");
   const [textSearchMode, setTextSearchMode] = useState<TextSearchMode>("hybrid");
-  const [searchResults, setSearchResults] = useState<TextSearchResult[]>([]);
+  const [searchResultsState, setSearchResults] = useState<TextSearchResult[]>(
+    []
+  );
+  // キーワードが空のときは結果を表示しない
+  const searchResults = keyword.trim() ? searchResultsState : [];
   const [textSearchLoading, setTextSearchLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -83,9 +88,15 @@ function SearchContent() {
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem("sekou_navi_search_history");
-    if (savedHistory) {
-      setSearchHistory(JSON.parse(savedHistory));
+    // localStorage はブラウザでしか読めないため、表示後に一度だけ読み込む
+    try {
+      const savedHistory = localStorage.getItem("sekou_navi_search_history");
+      if (savedHistory) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSearchHistory(JSON.parse(savedHistory));
+      }
+    } catch {
+      localStorage.removeItem("sekou_navi_search_history");
     }
   }, []);
 
@@ -104,7 +115,7 @@ function SearchContent() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/ai-search?q=${encodeURIComponent(trimmed)}&mode=${mode}&limit=20`
+        apiUrl(`/ai-search?q=${encodeURIComponent(trimmed)}&mode=${mode}&limit=20`)
       );
 
       if (!response.ok) {
@@ -145,10 +156,7 @@ function SearchContent() {
     if (searchTab !== "keyword") return;
 
     const trimmed = keyword.trim();
-    if (!trimmed) {
-      setSearchResults([]);
-      return;
-    }
+    if (!trimmed) return;
 
     const timer = window.setTimeout(() => {
       void runTextSearch(trimmed, textSearchMode);
@@ -225,7 +233,7 @@ function SearchContent() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/similar-search?top_k=10",
+        apiUrl("/similar-search?top_k=10"),
         { method: "POST", body: formData }
       );
 
@@ -269,7 +277,7 @@ function SearchContent() {
     }
 
     const response = await fetch(
-      `http://127.0.0.1:8000/search-suggestions?q=${encodeURIComponent(value)}`
+      apiUrl(`/search-suggestions?q=${encodeURIComponent(value)}`)
     );
     const data = await response.json();
     setSuggestions(data.suggestions || []);
@@ -536,7 +544,7 @@ function SearchContent() {
                   <Loader2 size={24} className="animate-spin" />
                 ) : (
                   <>
-                    <Image size={24} />
+                    <ImageIcon size={24} />
                     <span className="text-xs font-medium">追加</span>
                   </>
                 )}

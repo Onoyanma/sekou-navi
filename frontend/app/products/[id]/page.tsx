@@ -17,6 +17,7 @@ import {
 import { AppShell, surfaceClass, useTheme } from "@/components/AppShell";
 import { FieldAutocompleteInput } from "@/components/FieldAutocompleteInput";
 import { saveFieldHistory } from "@/lib/fieldSuggestions";
+import { apiUrl, productImageUrl } from "@/lib/api";
 
 type Product = {
   id: number;
@@ -63,14 +64,6 @@ const CATEGORIES = [
   "その他",
 ];
 
-function productImageUrl(imagePath: string): string {
-  const normalized = imagePath.startsWith("/")
-    ? imagePath.slice(1)
-    : imagePath;
-
-  return `http://127.0.0.1:8000/${encodeURI(normalized)}`;
-}
-
 export default function ProductDetailPage() {
   return (
     <AppShell
@@ -109,6 +102,7 @@ function ProductDetailContent() {
   const [manualUrl, setManualUrl] = useState("");
   const [installUrl, setInstallUrl] = useState("");
   const [officialUrl, setOfficialUrl] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   const inputClass = darkMode
     ? "mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
@@ -127,9 +121,28 @@ function ProductDetailContent() {
     : "border-t border-slate-200";
 
   const loadProduct = useCallback(async () => {
-    const response = await fetch(
-      `http://127.0.0.1:8000/products/${productId}`
-    );
+    setLoadError("");
+
+    let response: Response;
+    try {
+      response = await fetch(apiUrl(`/products/${productId}`));
+    } catch {
+      setLoadError(
+        "APIに接続できませんでした。バックエンドが起動しているか確認してください。"
+      );
+      return;
+    }
+
+    if (response.status === 404) {
+      setLoadError("この商品は見つかりませんでした。削除された可能性があります。");
+      return;
+    }
+
+    if (!response.ok) {
+      setLoadError("商品情報の取得に失敗しました。");
+      return;
+    }
+
     const data = await response.json();
     setProduct(data);
     setMaker(data.maker || "");
@@ -145,10 +158,10 @@ function ProductDetailContent() {
 
   const loadImages = useCallback(async () => {
     const response = await fetch(
-      `http://127.0.0.1:8000/products/${productId}/images`
-    );
+      apiUrl(`/products/${productId}/images`)
+    ).catch(() => null);
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       return;
     }
 
@@ -245,7 +258,7 @@ function ProductDetailContent() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/products/${productId}`,
+        apiUrl(`/products/${productId}`),
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -270,7 +283,7 @@ function ProductDetailContent() {
 
       for (const imageId of deletedImageIds) {
         await fetch(
-          `http://127.0.0.1:8000/products/${productId}/images/${imageId}`,
+          apiUrl(`/products/${productId}/images/${imageId}`),
           { method: "DELETE" }
         );
       }
@@ -279,7 +292,7 @@ function ProductDetailContent() {
         const formData = new FormData();
         formData.append("file", image.file);
 
-        await fetch(`http://127.0.0.1:8000/products/${productId}/images`, {
+        await fetch(apiUrl(`/products/${productId}/images`), {
           method: "POST",
           body: formData,
         });
@@ -336,7 +349,7 @@ function ProductDetailContent() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/products/${productId}`,
+        apiUrl(`/products/${productId}`),
         { method: "DELETE" }
       );
 
@@ -361,6 +374,23 @@ function ProductDetailContent() {
   const imageThumbClass = darkMode
     ? "w-28 shrink-0 rounded-2xl border border-slate-800 bg-slate-950 p-2"
     : "w-28 shrink-0 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm";
+
+  if (loadError) {
+    return (
+      <div
+        className={`${surfaceClass(darkMode)} flex flex-col items-center justify-center gap-4 p-12 text-center text-sm`}
+      >
+        <p>{loadError}</p>
+        <button
+          type="button"
+          onClick={() => router.push("/search")}
+          className="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+        >
+          商品検索に戻る
+        </button>
+      </div>
+    );
+  }
 
   if (loading || !product) {
     return (

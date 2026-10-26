@@ -1,3 +1,5 @@
+import { apiUrl } from "@/lib/api";
+
 export type SuggestionField = "maker" | "product_name";
 
 const HISTORY_KEY_PREFIX = "sekou_navi_history_";
@@ -92,7 +94,7 @@ export async function fetchFieldSuggestions(
   }
 
   const response = await fetch(
-    `http://127.0.0.1:8000/field-suggestions?${params.toString()}`
+    apiUrl(`/field-suggestions?${params.toString()}`)
   );
 
   if (!response.ok) {

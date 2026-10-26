@@ -8,6 +8,7 @@ __pycache__/
 # 環境変数・秘密情報
 .env
 .env.*
+!.env.example
 
 # データベース・生成データ（個人/テストデータを公開しない）
 *.db
@@ -25,6 +26,9 @@ ocr_images/
 # Node / Next.js（frontend/.gitignore でも除外）
 node_modules/
 .next/
+
+# テスト・ツールの一時ファイル
+.pytest_cache/
 
 # OS / エディタ
 .DS_Store

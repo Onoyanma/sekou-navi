@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ClipboardList,
-  Image,
+  Image as ImageIcon,
   Images,
   Loader2,
   PackagePlus,
@@ -25,6 +25,7 @@ import {
   parseScannedCode,
   searchByBarcode,
 } from "@/lib/barcode";
+import { apiUrl, productImageUrl } from "@/lib/api";
 
 type OcrCandidate = {
   model_number: string;
@@ -143,14 +144,6 @@ function mergeProductCandidates(
   });
 }
 
-function productImageUrl(imagePath: string): string {
-  const normalized = imagePath.startsWith("/")
-    ? imagePath.slice(1)
-    : imagePath;
-
-  return `http://127.0.0.1:8000/${encodeURI(normalized)}`;
-}
-
 export default function RegisterPage() {
   return (
     <AppShell
@@ -188,8 +181,11 @@ function RegisterContent() {
   const [officialUrl, setOfficialUrl] = useState("");
 
   const [autocompleteLoading, setAutocompleteLoading] = useState(false);
-  const [autocompletePreview, setAutocompletePreview] =
+  const [autocompletePreviewState, setAutocompletePreview] =
     useState<ProductAutocompleteSuggestion | null>(null);
+  // 型番・URL が両方空のときはプレビューを表示しない
+  const autocompletePreview =
+    modelNumber.trim() || officialUrl.trim() ? autocompletePreviewState : null;
 
   const [candidates, setCandidates] = useState<OcrCandidate[]>([]);
   const [matchedProducts, setMatchedProducts] = useState<MatchedProduct[]>([]);
@@ -212,6 +208,8 @@ function RegisterContent() {
     }
 
     if (modelNumber) {
+      // 検索画面やスキャン画面から引き継いだ値を初回表示時に一度だけ反映する
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModelNumber(modelNumber);
     }
 
@@ -302,7 +300,7 @@ function RegisterContent() {
         const formData = new FormData();
         formData.append("file", image.file);
 
-        const response = await fetch("http://127.0.0.1:8000/ocr", {
+        const response = await fetch(apiUrl("/ocr"), {
           method: "POST",
           body: formData,
         });
@@ -314,14 +312,13 @@ function RegisterContent() {
       }
 
       const ocrCandidates = allCandidates.sort((a, b) => b.score - a.score);
-      const ocrTexts = allTexts;
 
       if (ocrCandidates.length === 0 && labelImages.length > 0) {
         for (const image of images) {
           const formData = new FormData();
           formData.append("file", image.file);
 
-          const response = await fetch("http://127.0.0.1:8000/ocr", {
+          const response = await fetch(apiUrl("/ocr"), {
             method: "POST",
             body: formData,
           });
@@ -345,7 +342,7 @@ function RegisterContent() {
 
       if (finalOcrCandidates.length > 0) {
         const matchResponse = await fetch(
-          "http://127.0.0.1:8000/match-products",
+          apiUrl("/match-products"),
           {
             method: "POST",
             headers: {
@@ -370,7 +367,7 @@ function RegisterContent() {
       }
 
       const similarResponse = await fetch(
-        "http://127.0.0.1:8000/similar-search",
+        apiUrl("/similar-search"),
         {
           method: "POST",
           body: similarFormData,
@@ -388,7 +385,7 @@ function RegisterContent() {
         const bestModel = finalOcrCandidates[0].model_number;
 
         const suggestResponse = await fetch(
-          "http://127.0.0.1:8000/suggest-product-name",
+          apiUrl("/suggest-product-name"),
           {
             method: "POST",
             headers: {
@@ -589,11 +586,6 @@ function RegisterContent() {
     const trimmedModel = modelNumber.trim();
     const trimmedUrl = officialUrl.trim();
 
-    if (!trimmedModel && !trimmedUrl) {
-      setAutocompletePreview(null);
-      return;
-    }
-
     if (trimmedModel.length < 3 && trimmedUrl.length < 12) {
       return;
     }
@@ -606,7 +598,7 @@ function RegisterContent() {
   }, [modelNumber, officialUrl]);
 
   async function matchSelectedModel(selectedModel: string) {
-    const response = await fetch("http://127.0.0.1:8000/match-products", {
+    const response = await fetch(apiUrl("/match-products"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -628,7 +620,7 @@ function RegisterContent() {
     setMessage("");
 
     try {
-      const productResponse = await fetch("http://127.0.0.1:8000/products", {
+      const productResponse = await fetch(apiUrl("/products"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -656,7 +648,7 @@ function RegisterContent() {
           const imageFormData = new FormData();
           imageFormData.append("file", image.file);
 
-          await fetch(`http://127.0.0.1:8000/products/${productId}/images`, {
+          await fetch(apiUrl(`/products/${productId}/images`), {
             method: "POST",
             body: imageFormData,
           });
@@ -751,7 +743,7 @@ function RegisterContent() {
               <Loader2 size={24} className="animate-spin" />
             ) : (
               <>
-                <Image size={24} />
+                <ImageIcon size={24} />
                 <span className="text-xs font-medium">追加</span>
               </>
             )}
