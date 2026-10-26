@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   createContext,
   useContext,
-  useEffect,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -26,6 +25,38 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+const DARK_MODE_KEY = "darkMode";
+const DARK_MODE_EVENT = "sekou-navi:dark-mode";
+let memoryDarkMode = false;
+
+// ダークモード設定は localStorage に保存し、タブ間・コンポーネント間で同期する
+function subscribeDarkMode(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(DARK_MODE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(DARK_MODE_EVENT, onChange);
+  };
+}
+
+function readDarkMode(): boolean {
+  try {
+    return localStorage.getItem(DARK_MODE_KEY) === "true";
+  } catch {
+    return memoryDarkMode;
+  }
+}
+
+function writeDarkMode(value: boolean) {
+  memoryDarkMode = value;
+  try {
+    localStorage.setItem(DARK_MODE_KEY, String(value));
+  } catch {
+    // 保存できない環境（プライベートブラウズ等）でも画面上は切り替える
+  }
+  window.dispatchEvent(new Event(DARK_MODE_EVENT));
+}
 
 export function useTheme() {
   const context = useContext(ThemeContext);
@@ -53,15 +84,14 @@ const NAV_ICONS = {
 
 export function AppShell({ children, title, description }: AppShellProps) {
   const pathname = usePathname();
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    setDarkMode(localStorage.getItem("darkMode") === "true");
-  }, []);
+  const darkMode = useSyncExternalStore(
+    subscribeDarkMode,
+    readDarkMode,
+    () => false
+  );
 
   function applyDarkMode(next: boolean) {
-    setDarkMode(next);
-    localStorage.setItem("darkMode", String(next));
+    writeDarkMode(next);
   }
 
   function toggleDarkMode() {

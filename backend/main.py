@@ -21,14 +21,21 @@ import json
 from urllib.parse import urlparse, parse_qs, unquote
 
 import ai as product_ai
+from database import (
+    BASE_DIR,
+    DB_PATH as DB_NAME,
+    IMAGE_DIR,
+    TEMP_DIR,
+    ensure_storage_dirs,
+    init_db,
+    unique_filename,
+)
 
-app = FastAPI()
+app = FastAPI(title="施工ナビ API")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-DB_NAME = os.path.join(BASE_DIR, "..", "products.db")
-
-IMAGE_DIR = os.path.join(BASE_DIR, "..", "images")
+# 初回起動時（DB・画像フォルダがまだ無い場合）でも動くように先に用意する
+ensure_storage_dirs()
+init_db()
 
 app.mount(
     "/images",
@@ -39,8 +46,12 @@ app.mount(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        origin.strip()
+        for origin in os.environ.get(
+            "SEKOU_CORS_ORIGINS",
+            "http://localhost:3000,http://127.0.0.1:3000",
+        ).split(",")
+        if origin.strip()
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -152,7 +163,7 @@ def get_product(product_id: int):
     conn.close()
 
     if row is None:
-        return {"error": "Product not found"}
+        raise HTTPException(status_code=404, detail="商品が見つかりません")
 
     return dict(row)
 
@@ -299,11 +310,10 @@ async def upload_product_image(
     product_id: int,
     file: UploadFile = File(...)
 ):
-    image_dir = os.path.join(BASE_DIR, "..", "images")
-    os.makedirs(image_dir, exist_ok=True)
+    os.makedirs(IMAGE_DIR, exist_ok=True)
 
-    file_name = f"{product_id}_{file.filename}"
-    image_path = os.path.join(image_dir, file_name)
+    file_name = unique_filename(file.filename, prefix=f"{product_id}_")
+    image_path = os.path.join(IMAGE_DIR, file_name)
 
     with open(image_path, "wb") as f:
         content = await file.read()
@@ -426,8 +436,6 @@ def update_product(product_id: int, product: ProductUpdate):
     )
 
     saved = get_product(product_id)
-    if isinstance(saved, dict) and "error" in saved:
-        return saved
 
     return {
         **saved,
@@ -1366,6 +1374,15 @@ def fetch_all_product_rows():
     return rows
 
 
+def public_product(row_dict):
+    """API レスポンス用に、埋め込みベクトル（バイナリ）を除いた商品情報を返す。"""
+    return {
+        key: value
+        for key, value in row_dict.items()
+        if key not in ("text_embedding", "image_embedding")
+    }
+
+
 def keyword_search_products(query: str):
     rows = fetch_all_product_rows()
     keywords = query.upper().replace("　", " ").split()
@@ -1408,7 +1425,7 @@ def keyword_search_products(query: str):
 
         if matched_all_keywords and score > 0:
             results.append({
-                "product": row_dict,
+                "product": public_product(row_dict),
                 "score": round(score, 1),
                 "keyword_score": round(score, 1),
                 "semantic_score": 0,
@@ -1466,7 +1483,7 @@ def semantic_search_products(query: str, limit: int = 20):
         semantic_score = round(similarity * 100, 1)
 
         results.append({
-            "product": row_dict,
+            "product": public_product(row_dict),
             "score": semantic_score,
             "keyword_score": 0,
             "semantic_score": semantic_score,
@@ -1608,14 +1625,23 @@ def rebuild_embeddings():
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
+def remove_temp_files(paths):
+    """解析が終わった一時画像を削除する（失敗しても処理は止めない）。"""
+    for path in paths:
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError as e:
+                print(f"temp file cleanup failed for {path}: {e}")
+
+
 @app.post("/ocr")
 async def ocr_image(file: UploadFile = File(...)):
+    image_path = None
     try:
-        temp_dir = os.path.join(BASE_DIR, "..", "temp_images")
-        os.makedirs(temp_dir, exist_ok=True)
+        os.makedirs(TEMP_DIR, exist_ok=True)
 
-        safe_filename = (file.filename or "upload.jpg").replace(" ", "_")
-        image_path = os.path.join(temp_dir, safe_filename)
+        image_path = os.path.join(TEMP_DIR, unique_filename(file.filename))
 
         with open(image_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -1640,6 +1666,8 @@ async def ocr_image(file: UploadFile = File(...)):
             status_code=500,
             detail=str(e)
         )
+    finally:
+        remove_temp_files([image_path])
     
 def fetch_embedded_product_images():
     conn = sqlite3.connect(DB_NAME)
@@ -1733,6 +1761,7 @@ async def similar_search(
     files: Optional[List[UploadFile]] = File(None),
     top_k: int = 5,
 ):
+    temp_paths: List[str] = []
     try:
         upload_files: List[UploadFile] = []
 
@@ -1748,17 +1777,20 @@ async def similar_search(
                 detail="画像ファイルが必要です",
             )
 
-        temp_dir = os.path.join(BASE_DIR, "..", "temp_images")
-        os.makedirs(temp_dir, exist_ok=True)
+        os.makedirs(TEMP_DIR, exist_ok=True)
 
         query_embeddings = []
         all_texts = []
 
         for index, upload_file in enumerate(upload_files):
-            safe_filename = (
-                upload_file.filename or f"query_{index}.jpg"
-            ).replace(" ", "_")
-            image_path = os.path.join(temp_dir, f"{index}_{safe_filename}")
+            image_path = os.path.join(
+                TEMP_DIR,
+                unique_filename(
+                    upload_file.filename or f"query_{index}.jpg",
+                    prefix=f"{index}_",
+                ),
+            )
+            temp_paths.append(image_path)
 
             with open(image_path, "wb") as buffer:
                 shutil.copyfileobj(upload_file.file, buffer)
@@ -1818,6 +1850,8 @@ async def similar_search(
             status_code=500,
             detail=str(e)
         )
+    finally:
+        remove_temp_files(temp_paths)
     
 @app.post("/match-products")
 def match_products(candidates: list[str]):

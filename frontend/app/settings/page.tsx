@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Moon, Sun, Trash2 } from "lucide-react";
 import { AppShell, surfaceClass, useTheme } from "@/components/AppShell";
 import { clearBarcodeRegisterDraft } from "@/lib/barcode";
+import { API_BASE_URL } from "@/lib/api";
 
 const SEARCH_HISTORY_KEY = "sekou_navi_search_history";
 const MAKER_HISTORY_KEY = "sekou_navi_history_maker";
@@ -197,7 +198,7 @@ function SettingsContent() {
             darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"
           }
         >
-          バックエンド: http://127.0.0.1:8000
+          バックエンド: {API_BASE_URL}
         </p>
       </section>
     </div>

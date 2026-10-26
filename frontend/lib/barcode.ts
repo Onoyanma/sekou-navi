@@ -1,3 +1,5 @@
+import { apiUrl } from "@/lib/api";
+
 const CODE_QUERY_KEYS = [
   "model",
   "model_number",
@@ -130,7 +132,7 @@ export function buildRegisterUrl(draft: BarcodeRegisterDraft): string {
 
 export async function searchByBarcode(code: string) {
   const response = await fetch(
-    `http://127.0.0.1:8000/barcode-search?code=${encodeURIComponent(code)}`
+    apiUrl(`/barcode-search?code=${encodeURIComponent(code)}`)
   );
 
   if (!response.ok) {
@@ -156,7 +158,7 @@ export async function registerProduct(payload: {
   memo?: string;
   tags?: string;
 }) {
-  const response = await fetch("http://127.0.0.1:8000/products", {
+  const response = await fetch(apiUrl("/products"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

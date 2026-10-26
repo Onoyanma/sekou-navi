@@ -47,7 +47,7 @@ export function BarcodeQuickRegister({
   const [productName, setProductName] = useState("未登録");
   const [model, setModel] = useState(modelNumber);
   const [category, setCategory] = useState("その他");
-  const [memo, setMemo] = useState("");
+  const [memo] = useState("");
   const [tags, setTags] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

@@ -1,3 +1,6 @@
+import { apiUrl } from "@/lib/api";
+export { productImageUrl } from "@/lib/api";
+
 export type Product = {
   id: number;
   maker: string;
@@ -10,14 +13,6 @@ export type Product = {
   image_path: string;
 };
 
-export function productImageUrl(imagePath: string): string {
-  if (!imagePath) return "";
-  const normalized = imagePath.startsWith("/")
-    ? imagePath.slice(1)
-    : imagePath;
-
-  return `http://127.0.0.1:8000/${encodeURI(normalized)}`;
-}
 
 export function toProduct(raw: Record<string, unknown>): Product {
   const imagePath =
@@ -46,7 +41,7 @@ export type HomeSummary = {
 
 export async function fetchHomeSummary(limit = 6): Promise<HomeSummary> {
   const response = await fetch(
-    `http://127.0.0.1:8000/products/summary?limit=${limit}`
+    apiUrl(`/products/summary?limit=${limit}`)
   );
 
   if (!response.ok) {
@@ -66,7 +61,7 @@ export async function fetchHomeSummary(limit = 6): Promise<HomeSummary> {
 
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const response = await fetch("http://127.0.0.1:8000/", {
+    const response = await fetch(apiUrl("/"), {
       method: "GET",
       cache: "no-store",
     });
@@ -77,6 +72,6 @@ export async function checkApiHealth(): Promise<boolean> {
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  const response = await fetch("http://127.0.0.1:8000/products");
+  const response = await fetch(apiUrl("/products"));
   return response.json();
 }

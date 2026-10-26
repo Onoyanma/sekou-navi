@@ -8,6 +8,7 @@ import { LazyBarcodeScanner } from "@/components/LazyBarcodeScanner";
 import { ProductCard } from "@/components/ProductCard";
 import { parseScannedCode, searchByBarcode } from "@/lib/barcode";
 import { productImageUrl, toProduct, type Product } from "@/lib/products";
+import { apiUrl } from "@/lib/api";
 
 type BarcodeSearchResult = {
   score: number;
@@ -77,7 +78,7 @@ function ScanContent() {
       await handleBarcodeScan(lastScannedCode, { keepNotice: true });
     } else {
       const response = await fetch(
-        `http://127.0.0.1:8000/products/${productId}`
+        apiUrl(`/products/${productId}`)
       );
       const product = await response.json();
       setBarcodeResults([

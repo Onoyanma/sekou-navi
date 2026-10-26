@@ -1,0 +1,11 @@
+# テスト・CI 用の依存関係
+# EasyOCR / SentenceTransformers はモデルが重いため、テストではスタブに置き換える（tests/stubs.py）
+fastapi
+uvicorn
+python-multipart
+httpx
+pillow
+numpy
+scikit-learn
+requests
+beautifulsoup4

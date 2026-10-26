@@ -1,3 +1,5 @@
+import { apiUrl } from "@/lib/api";
+
 export type ProductAutocompleteSuggestion = {
   maker: string;
   product_name: string;
@@ -29,7 +31,7 @@ export async function fetchProductAutocomplete(params: {
   modelNumber?: string;
   url?: string;
 }): Promise<ProductAutocompleteSuggestion> {
-  const response = await fetch("http://127.0.0.1:8000/autocomplete-product", {
+  const response = await fetch(apiUrl("/autocomplete-product"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
