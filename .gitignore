@@ -37,3 +37,6 @@ node_modules/
 # 精度評価
 backend/evaluation/dataset/
 backend/evaluation/results/
+
+# 個人用メモ（面接・記事の下書きなど）
+docs/private/

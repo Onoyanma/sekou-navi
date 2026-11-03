@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" role="img" aria-labelledby="t d" font-family="'Hiragino Sans','Noto Sans JP','Yu Gothic',sans-serif">
+  <title id="t">施工ナビの処理の流れ</title>
+  <desc id="d">型番ラベルの写真から、OCRと画像検索を組み合わせて登録済み商品を特定し、確度を付けて返す流れと、精度評価の仕組み。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .box { fill:#ffffff; stroke:#94a3b8; stroke-width:1.5; rx:10; }
+      .ocr { fill:#eff6ff; stroke:#3b82f6; }
+      .img { fill:#ecfdf5; stroke:#10b981; }
+      .merge { fill:#fff7ed; stroke:#f59e0b; }
+      .eval { fill:#f5f3ff; stroke:#8b5cf6; }
+      .ui { fill:#f1f5f9; stroke:#64748b; }
+      .title { font-size:15px; font-weight:700; fill:#0f172a; }
+      .sub { font-size:12px; fill:#334155; }
+      .label { font-size:12px; fill:#475569; }
+      .head { font-size:13px; font-weight:700; fill:#475569; letter-spacing:1px; }
+      .line { stroke:#475569; stroke-width:1.8; fill:none; marker-end:url(#arrow); }
+      .dash { stroke:#8b5cf6; stroke-width:1.5; fill:none; stroke-dasharray:5 4; marker-end:url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1000" height="640" fill="#ffffff"/>
+
+  <text class="head" x="30" y="30">アプリの処理の流れ</text>
+
+  <!-- UI -->
+  <rect class="box ui" x="30" y="50" width="190" height="86"/>
+  <text class="title" x="46" y="78">Web（Next.js）</text>
+  <text class="sub" x="46" y="98">撮影・検索・登録</text>
+  <text class="sub" x="46" y="116">写真は送信前に縮小</text>
+
+  <!-- API -->
+  <rect class="box" x="270" y="50" width="190" height="86"/>
+  <text class="title" x="286" y="78">API（FastAPI）</text>
+  <text class="sub" x="286" y="98">routers / services</text>
+  <text class="sub" x="286" y="116">SQLite（商品・画像）</text>
+  <path class="line" d="M220 93 L268 93"/>
+
+  <!-- OCR branch -->
+  <rect class="box ocr" x="30" y="190" width="232" height="112"/>
+  <text class="title" x="46" y="216">① 文字を読む（OCR）</text>
+  <text class="sub" x="46" y="238">タイル分割（3×3）で小さい文字を拡大</text>
+  <text class="sub" x="46" y="256">英数字専用モデルと併用</text>
+  <text class="sub" x="46" y="274">暗いラベルは白黒反転</text>
+  <text class="sub" x="46" y="292">低い確信度の読み取りは捨てる</text>
+
+  <rect class="box ocr" x="30" y="340" width="232" height="112"/>
+  <text class="title" x="46" y="366">② 型番の候補を作る</text>
+  <text class="sub" x="46" y="388">電気仕様・寸法・電話番号を除外</text>
+  <text class="sub" x="46" y="406">「形名」の近くや英字始まりを優先</text>
+  <text class="sub" x="46" y="424">0 と O などの誤読を補正</text>
+  <text class="sub" x="46" y="442">メーカーを判定（辞書）</text>
+
+  <rect class="box ocr" x="30" y="490" width="232" height="92"/>
+  <text class="title" x="46" y="516">③ 登録済み商品と照合</text>
+  <text class="sub" x="46" y="538">型番の一致・近さ・メーカーで</text>
+  <text class="sub" x="46" y="556">スコア化（誤読を登録商品へ寄せる）</text>
+
+  <!-- Image branch -->
+  <rect class="box img" x="290" y="190" width="236" height="112"/>
+  <text class="title" x="306" y="216">④ 見た目を比べる（CLIP）</text>
+  <text class="sub" x="306" y="238">写真を埋め込みベクトルに変換</text>
+  <text class="sub" x="306" y="256">登録済みの画像との類似度を計算</text>
+  <text class="sub" x="306" y="274">基準値（0.7）を超えた分だけ点数に</text>
+  <text class="sub" x="306" y="292">→ 似ているだけの別商品を抑える</text>
+
+  <!-- Merge -->
+  <rect class="box merge" x="290" y="400" width="236" height="182"/>
+  <text class="title" x="306" y="426">⑤ スコアを統合</text>
+  <text class="sub" x="306" y="448">型番 + メーカー + 画像を合算</text>
+  <text class="title" x="306" y="486">⑥ 確度を付ける</text>
+  <text class="sub" x="306" y="508">高：型番が一致し、300点以上</text>
+  <text class="sub" x="306" y="526">中：100点以上</text>
+  <text class="sub" x="306" y="544">低：それ未満（参考として表示）</text>
+  <text class="sub" x="306" y="568">未登録なら登録・説明書検索へ</text>
+
+  <!-- arrows in app flow -->
+  <path class="line" d="M365 136 L365 160 L146 160 L146 188"/>
+  <path class="line" d="M365 136 L365 160 L408 160 L408 188"/>
+  <path class="line" d="M146 302 L146 338"/>
+  <path class="line" d="M146 452 L146 488"/>
+  <path class="line" d="M262 536 L276 536 L276 470 L288 470"/>
+  <path class="line" d="M408 302 L408 398"/>
+
+  <!-- Result -->
+  <rect class="box ui" x="560" y="400" width="190" height="182"/>
+  <text class="title" x="576" y="426">結果の表示</text>
+  <text class="sub" x="576" y="448">候補と確度（高・中・低）</text>
+  <text class="sub" x="576" y="466">自信がないときは</text>
+  <text class="sub" x="576" y="484">「参考です」と明示</text>
+  <text class="sub" x="576" y="508">型番を入力して探す</text>
+  <text class="sub" x="576" y="526">この型番で登録する</text>
+  <text class="sub" x="576" y="544">説明書を検索する</text>
+  <path class="line" d="M526 491 L558 491"/>
+
+  <!-- Evaluation -->
+  <text class="head" x="560" y="30">精度評価の仕組み（backend/evaluation）</text>
+  <rect class="box eval" x="560" y="50" width="410" height="86"/>
+  <text class="title" x="576" y="78">実際に撮った型番ラベルの写真 + 正解ラベル</text>
+  <text class="sub" x="576" y="100">改善の前後を、同じ写真・同じ指標で比べる</text>
+  <text class="sub" x="576" y="118">写真は個人情報を含みうるため Git 管理外</text>
+
+  <rect class="box eval" x="560" y="190" width="410" height="156"/>
+  <text class="title" x="576" y="216">評価スクリプト（①〜⑥と同じ処理を実行）</text>
+  <text class="sub" x="576" y="240">・型番の Top-1 / Top-3 / Top-5 正解率、文字誤り率</text>
+  <text class="sub" x="576" y="260">・登録済み商品との照合（同点は不利に数える）</text>
+  <text class="sub" x="576" y="280">・OCR / 画像のみ / 併用の比較（1 枚ずつ除外）</text>
+  <text class="sub" x="576" y="300">・確度「高」の正解率、未登録時の誤受理率</text>
+  <text class="sub" x="576" y="320">・処理時間（平均・p95）</text>
+  <path class="dash" d="M765 136 L765 188"/>
+  <path class="dash" d="M560 260 L543 260 L543 246 L528 246" />
+  <text class="label" x="600" y="170">測定</text>
+
+  <text class="label" x="30" y="622">実線：アプリの処理　／　破線：評価（アプリと同じコードを呼び出して測定）</text>
+</svg>

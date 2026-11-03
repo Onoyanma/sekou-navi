@@ -1,0 +1,9 @@
+participant,item,method,registered,seconds,success,notes
+U1,P01,A,,95,1,ダミーデータ（動作確認用。実際の結果ではありません）
+U1,P02,A,,120,1,ダミー
+U1,P03,B,yes,18,1,ダミー
+U1,P04,B,no,60,1,ダミー
+U2,P01,B,yes,22,1,ダミー
+U2,P02,B,no,75,0,ダミー
+U2,P03,A,,150,1,ダミー
+U2,P04,A,,180,0,ダミー

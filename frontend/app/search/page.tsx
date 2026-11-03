@@ -761,18 +761,20 @@ function SearchContent() {
               role="status"
               className={
                 darkMode
-                  ? "flex flex-wrap items-center gap-3 rounded-xl border border-amber-800 bg-amber-950/50 px-4 py-3 text-sm text-amber-300"
-                  : "flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                  ? "flex flex-col gap-3 rounded-xl border border-amber-800 bg-amber-950/50 px-4 py-3 text-sm text-amber-300 sm:flex-row sm:items-center"
+                  : "flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center"
               }
             >
-              <TriangleAlert size={18} className="shrink-0" />
-              <span className="flex-1">
-                自信を持って特定できませんでした。表示している結果は参考です。型番がわかる場合は、型番を入力して探してください。
-              </span>
+              <div className="flex flex-1 items-start gap-3">
+                <TriangleAlert size={18} className="mt-0.5 shrink-0" />
+                <span>
+                  自信を持って特定できませんでした。表示している結果は参考です。型番がわかる場合は、型番を入力して探してください。
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => switchToKeywordSearch(topOcrCandidate)}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                className="rounded-lg bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700 sm:shrink-0 sm:py-2"
               >
                 型番を入力して探す
               </button>
