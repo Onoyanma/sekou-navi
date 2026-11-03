@@ -6,10 +6,10 @@
 商品写真や型番ラベル・バーコードから型番やメーカー・カテゴリを推定し、施工説明書の検索や商品管理を効率化します。
 
 <p align="center">
-  <img src="assets/demo.gif" alt="施工ナビのデモ：型番ラベルを撮影し、登録済みなら確度「高」、未登録なら確度「低」と登録・説明書検索の導線を表示" width="280">
+  <img src="assets/demo.gif" alt="施工ナビの画面：ホーム、検索、写真検索、スキャン、商品登録" width="280">
 </p>
 
-<p align="center"><sub>画面のスクリーンショットをつないだものです（ホーム → 撮影 → 登録済みの商品 → 未登録の商品）。実際の画面は <a href="assets/screenshots">assets/screenshots</a> にあります。</sub></p>
+<p align="center"><sub>画面のスクリーンショットをつないだものです（ホーム → 検索 → 写真検索 → スキャン → 登録）。実際の画面は <a href="assets/screenshots">assets/screenshots</a> にあります。</sub></p>
 
 ## 開発の背景
 
