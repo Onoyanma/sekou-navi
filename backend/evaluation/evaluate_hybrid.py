@@ -45,6 +45,10 @@ class QueryResult:
     expected: str
     ranks: dict  # モード名 -> 正しい商品の順位（見つからなければ None）
     has_registered_image: bool  # 同じ商品の別の写真が登録済みか
+    # --- 確度（アプリが「自信がある」と表示する基準が妥当か）---
+    top_confidence: str = "none"  # 1 位の確度（high / medium / low / none）
+    top_correct: bool = False  # 1 位が正解か
+    unregistered_confidence: str = "none"  # 正解の商品が未登録だったときの 1 位の確度
 
 
 def pessimistic_rank(expected: str, scored: list[tuple[float, str]]) -> Optional[int]:
@@ -110,11 +114,28 @@ def evaluate_queries(
             for similarity, model in image_ranking
         ]
 
-        def merged_ranking(images):
-            merged = pipeline.merge_similar_search_results(
-                images, candidates, maker, similar_models, catalog, hints, top_k=len(catalog)
+        def merged_entries(images, products=catalog, similar=similar_models):
+            return pipeline.merge_similar_search_results(
+                images, candidates, maker, similar, products, hints, top_k=len(products)
             )
-            return [(r["combined_score"], r["product"]["model_number"]) for r in merged]
+
+        def merged_ranking(images):
+            return [
+                (r["combined_score"], r["product"]["model_number"])
+                for r in merged_entries(images)
+            ]
+
+        expected = normalize_model(query.model_number)
+        hybrid = merged_entries(image_results)
+        top = hybrid[0] if hybrid else None
+
+        # 正解の商品が未登録だった場合（DB にも画像にも無い）に、自信ありげな結果を返さないか
+        others = [p for p in catalog if normalize_model(p["model_number"]) != expected]
+        unregistered = merged_entries(
+            [r for r in image_results if normalize_model(r["product"]["model_number"]) != expected],
+            others,
+            pipeline.find_similar_model_numbers(candidates, others),
+        )
 
         results.append(
             QueryResult(
@@ -125,9 +146,10 @@ def evaluate_queries(
                     "image": pessimistic_rank(query.model_number, image_ranking),
                     "hybrid": pessimistic_rank(query.model_number, merged_ranking(image_results)),
                 },
-                has_registered_image=any(
-                    m == normalize_model(query.model_number) for m, _ in registered
-                ),
+                has_registered_image=any(m == expected for m, _ in registered),
+                top_confidence=top["confidence"] if top else "none",
+                top_correct=bool(top) and normalize_model(top["product"]["model_number"]) == expected,
+                unregistered_confidence=unregistered[0]["confidence"] if unregistered else "none",
             )
         )
 
@@ -148,6 +170,17 @@ def summarize(results: list[QueryResult]) -> dict:
         for mode in MODES:
             for k in (1, 3):
                 metrics[f"{scope}_{mode}_top{k}"] = top_k_rate(rows, mode, k)
+
+    high = [r for r in results if r.top_confidence == "high"]
+    metrics["high_confidence_count"] = len(high)
+    metrics["high_confidence_precision"] = (
+        sum(1 for r in high if r.top_correct) / len(high) if high else None
+    )
+    metrics["unregistered_high_rate"] = (
+        sum(1 for r in results if r.unregistered_confidence == "high") / len(results)
+        if results
+        else None
+    )
 
     # テキストだけでは 1 位にならなかった写真を、併用で 1 位にできたか／逆に落としたか
     metrics["rescued"] = [
@@ -178,6 +211,11 @@ def render_markdown(results: list[QueryResult], metrics: dict, dataset_name: str
         "|---|---|---|---|",
         row("すべての写真", "all"),
         row("同じ商品の別写真が登録済みの写真", "with_image"),
+        "",
+        "## 確度の表示は信頼できるか",
+        "",
+        f"- 確度「高」と表示した写真: {metrics['high_confidence_count']} 枚、そのうち 1 位が正解: {pct(metrics['high_confidence_precision'])}",
+        f"- 正解の商品が未登録のとき、確度「高」と誤って表示した割合: {pct(metrics['unregistered_high_rate'])}",
         "",
         f"- 併用で新たに 1 位になった写真: {', '.join(metrics['rescued']) or 'なし'}",
         f"- 併用で 1 位から落ちた写真: {', '.join(metrics['regressed']) or 'なし'}",

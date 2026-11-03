@@ -66,5 +66,25 @@ class ImageScoreBaselineTest(unittest.TestCase):
         self.assertAlmostEqual(merge_image_only(0.5), 25.0)
 
 
+class ConfidenceTest(unittest.TestCase):
+    def test_high_requires_a_model_match(self):
+        self.assertEqual(matching.classify_confidence(500, ["model", "image"]), "high")
+        # 画像が似ているだけでは、点数が高くても high にしない
+        self.assertEqual(matching.classify_confidence(500, ["image"]), "medium")
+
+    def test_thresholds(self):
+        self.assertEqual(matching.classify_confidence(299, ["model"]), "medium")
+        self.assertEqual(matching.classify_confidence(100, ["model"]), "medium")
+        self.assertEqual(matching.classify_confidence(99, ["model"]), "low")
+
+    def test_merged_results_carry_a_confidence(self):
+        product = {"id": 1, "maker": "", "model_number": "AB-100", "product_name": ""}
+        results = matching.merge_similar_search_results(
+            [{"product": product, "similarity": 0.9, "image_type": "その他"}],
+            [], "", [], [], [],
+        )
+        self.assertIn(results[0]["confidence"], {"high", "medium", "low"})
+
+
 if __name__ == "__main__":
     unittest.main()

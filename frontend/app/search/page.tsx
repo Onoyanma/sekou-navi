@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Camera,
   Clock,
   Image as ImageIcon,
   Images,
@@ -9,10 +10,13 @@ import {
   Package,
   Search,
   Sparkles,
+  TriangleAlert,
   X,
 } from "lucide-react";
 import { AppShell, surfaceClass, useTheme } from "@/components/AppShell";
-import { ProductCard } from "@/components/ProductCard";
+import { ProductCard, type MatchConfidence } from "@/components/ProductCard";
+import { UnregisteredModelPanel } from "@/components/UnregisteredModelPanel";
+import { downscaleImage } from "@/lib/image";
 import {
   productImageUrl,
   toProduct,
@@ -25,10 +29,12 @@ type SimilarImageResult = {
   combined_score?: number;
   sources?: string[];
   ocr_candidate?: string;
+  confidence?: MatchConfidence;
   product: Product;
 };
 
 type ImageSearchInsight = {
+  top_confidence: MatchConfidence | "none";
   detected_maker: string;
   ocr_candidates: Array<{ model_number: string; score: number }>;
   product_name_hints: string[];
@@ -41,6 +47,9 @@ type SelectedSearchImage = {
 };
 
 type SearchTab = "keyword" | "image";
+
+// 自信を持って特定できなかったときは、関係の薄い候補を並べすぎない
+const LOW_CONFIDENCE_RESULT_LIMIT = 3;
 type TextSearchMode = "keyword" | "semantic" | "hybrid";
 
 type TextSearchResult = {
@@ -85,7 +94,9 @@ function SearchContent() {
   >([]);
   const [imageSearchInsight, setImageSearchInsight] =
     useState<ImageSearchInsight | null>(null);
+  const [imageSearchError, setImageSearchError] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // localStorage はブラウザでしか読めないため、表示後に一度だけ読み込む
@@ -176,6 +187,7 @@ function SearchContent() {
     setImageSearchFiles([]);
     setSimilarImageResults([]);
     setImageSearchInsight(null);
+    setImageSearchError("");
     if (imageInputRef.current) {
       imageInputRef.current.value = "";
     }
@@ -204,10 +216,15 @@ function SearchContent() {
     runImageSearch(nextFiles.map((image) => image.file));
   }
 
-  function addImageSearchFiles(selectedFiles: File[]) {
+  async function addImageSearchFiles(selectedFiles: File[]) {
     if (selectedFiles.length === 0) return;
 
-    const newImages: SelectedSearchImage[] = selectedFiles.map((file) => ({
+    // 通信が遅くても待たされないよう、送る前に写真を縮小する
+    const resizedFiles = await Promise.all(
+      selectedFiles.map((file) => downscaleImage(file))
+    );
+
+    const newImages: SelectedSearchImage[] = resizedFiles.map((file) => ({
       id: `${file.name}_${file.lastModified}_${Math.random()}`,
       file,
       previewUrl: URL.createObjectURL(file),
@@ -221,6 +238,15 @@ function SearchContent() {
   async function runImageSearch(files?: File[]) {
     const targetFiles = files ?? imageSearchFiles.map((image) => image.file);
     if (targetFiles.length === 0) return;
+
+    setImageSearchError("");
+
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setImageSearchError(
+        "インターネットに接続されていません。電波の良い場所で再度お試しいただくか、型番がわかる場合はキーワード検索を使ってください。"
+      );
+      return;
+    }
 
     setImageSearchLoading(true);
     setSimilarImageResults([]);
@@ -239,6 +265,9 @@ function SearchContent() {
 
       if (!response.ok) {
         setSimilarImageResults([]);
+        setImageSearchError(
+          "写真の解析に失敗しました。もう一度お試しください。"
+        );
         return;
       }
 
@@ -251,20 +280,28 @@ function SearchContent() {
             combined_score?: number;
             sources?: string[];
             ocr_candidate?: string;
+            confidence?: MatchConfidence;
           }) => ({
             similarity: item.similarity ?? 0,
             combined_score: item.combined_score,
             sources: item.sources,
             ocr_candidate: item.ocr_candidate,
+            confidence: item.confidence,
             product: toProduct(item.product),
           })
         )
       );
       setImageSearchInsight({
+        top_confidence: data.top_confidence || "none",
         detected_maker: data.detected_maker || "",
         ocr_candidates: data.ocr_candidates || [],
         product_name_hints: data.product_name_hints || [],
       });
+    } catch (error) {
+      console.error(error);
+      setImageSearchError(
+        "通信に失敗しました。電波の良い場所で、もう一度お試しください。"
+      );
     } finally {
       setImageSearchLoading(false);
     }
@@ -298,7 +335,21 @@ function SearchContent() {
     );
   }
 
+  function switchToKeywordSearch(model: string) {
+    revokeImagePreviews(imageSearchFiles);
+    setImageSearchFiles([]);
+    setSimilarImageResults([]);
+    setImageSearchInsight(null);
+    setImageSearchError("");
+    setKeyword(model);
+    setSearchTab("keyword");
+  }
+
   const isImageSearchMode = imageSearchFiles.length > 0;
+  const topOcrCandidate = imageSearchInsight?.ocr_candidates[0]?.model_number || "";
+  const isLowConfidence =
+    imageSearchInsight?.top_confidence === "low" ||
+    imageSearchInsight?.top_confidence === "none";
   const hasKeywordSearch = keyword.trim().length > 0;
 
   const modeHint: Record<TextSearchMode, string> = {
@@ -516,6 +567,17 @@ function SearchContent() {
             >
               写真から画像の類似・型番・メーカー・商品名を読み取り、登録済み商品を探します
             </p>
+            <ul
+              className={
+                darkMode
+                  ? "list-inside list-disc space-y-1 rounded-xl bg-slate-950 p-4 text-sm text-slate-400"
+                  : "list-inside list-disc space-y-1 rounded-xl bg-slate-50 p-4 text-sm text-slate-600"
+              }
+            >
+              <li>型番ラベルに近づいて、文字が画面いっぱいになるように撮る</li>
+              <li>照明の反射や影を避け、ラベルに正面から向ける</li>
+              <li>読めないときは、ラベルだけを写した写真を追加する</li>
+            </ul>
 
             <input
               ref={imageInputRef}
@@ -524,12 +586,32 @@ function SearchContent() {
               multiple
               className="hidden"
               onChange={(e) => {
-                addImageSearchFiles(Array.from(e.target.files || []));
+                void addImageSearchFiles(Array.from(e.target.files || []));
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                void addImageSearchFiles(Array.from(e.target.files || []));
                 e.target.value = "";
               }}
             />
 
             <div className="flex flex-wrap items-start gap-3">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={imageSearchLoading}
+                className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <Camera size={28} />
+                <span className="text-sm font-semibold">撮影</span>
+              </button>
               <button
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
@@ -577,7 +659,7 @@ function SearchContent() {
                   }
                 >
                   {imageSearchLoading
-                    ? `${imageSearchFiles.length}枚を解析中...`
+                    ? `${imageSearchFiles.length}枚を解析中...（10秒ほどかかることがあります）`
                     : `${imageSearchFiles.length}枚で検索済み`}
                 </p>
                 {!imageSearchLoading && (
@@ -628,6 +710,84 @@ function SearchContent() {
         </div>
       )}
 
+      {imageSearchError && (
+        <div
+          role="alert"
+          className={
+            darkMode
+              ? "flex flex-wrap items-center gap-3 rounded-xl border border-red-900 bg-red-950/50 px-4 py-3 text-sm text-red-300"
+              : "flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          }
+        >
+          <span className="flex-1">{imageSearchError}</span>
+          {imageSearchFiles.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void runImageSearch()}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              もう一度解析する
+            </button>
+          )}
+        </div>
+      )}
+
+      {isImageSearchMode && imageSearchInsight && !imageSearchLoading && (
+        <>
+          {imageSearchInsight.top_confidence === "high" && (
+            <p
+              className={
+                darkMode
+                  ? "rounded-xl border border-emerald-800 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300"
+                  : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+              }
+            >
+              型番が一致する商品が見つかりました。
+            </p>
+          )}
+          {imageSearchInsight.top_confidence === "medium" && (
+            <p
+              className={
+                darkMode
+                  ? "rounded-xl border border-amber-800 bg-amber-950/50 px-4 py-3 text-sm text-amber-300"
+                  : "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+              }
+            >
+              候補です。実物のラベルの型番と一致するか確認してください。
+            </p>
+          )}
+          {isLowConfidence && (
+            <div
+              role="status"
+              className={
+                darkMode
+                  ? "flex flex-wrap items-center gap-3 rounded-xl border border-amber-800 bg-amber-950/50 px-4 py-3 text-sm text-amber-300"
+                  : "flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              }
+            >
+              <TriangleAlert size={18} className="shrink-0" />
+              <span className="flex-1">
+                自信を持って特定できませんでした。表示している結果は参考です。型番がわかる場合は、型番を入力して探してください。
+              </span>
+              <button
+                type="button"
+                onClick={() => switchToKeywordSearch(topOcrCandidate)}
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+              >
+                型番を入力して探す
+              </button>
+            </div>
+          )}
+          {isLowConfidence && topOcrCandidate && (
+            <UnregisteredModelPanel
+              darkMode={darkMode}
+              modelNumber={topOcrCandidate}
+              maker={imageSearchInsight.detected_maker}
+            />
+          )}
+        </>
+      )}
+
       {isImageSearchMode ? (
         <section className="space-y-4">
           <h2
@@ -650,7 +810,10 @@ function SearchContent() {
 
           {similarImageResults.length > 0 ? (
             <div className="grid gap-4">
-              {similarImageResults.map((item, index) => (
+              {(isLowConfidence
+                ? similarImageResults.slice(0, LOW_CONFIDENCE_RESULT_LIMIT)
+                : similarImageResults
+              ).map((item, index) => (
                 <ProductCard
                   key={`${item.product.id}_${index}`}
                   product={item.product}
@@ -660,6 +823,7 @@ function SearchContent() {
                   combinedScore={item.combined_score}
                   sources={item.sources}
                   ocrCandidate={item.ocr_candidate}
+                  confidence={item.confidence}
                 />
               ))}
             </div>

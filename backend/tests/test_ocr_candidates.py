@@ -53,6 +53,18 @@ class ModelCandidateTest(unittest.TestCase):
         self.assertEqual(model_numbers.detect_maker_from_text(["SHARP", "RE-CE8-KW"]), "SHARP")
         self.assertEqual(model_numbers.detect_maker_from_text(["アイホン"]), "アイホン")
 
+    def test_more_makers_are_detected(self):
+        for text, maker in [
+            ("KVK", "KVK"),
+            ("株式会社SANEI", "SANEI"),
+            ("ODELIC", "オーデリック"),
+            ("TOSHIBA LIGHTING & TECHNOLOGY", "東芝ライテック"),
+            ("TOSHIBA", "東芝"),
+            ("日東工業", "日東工業"),
+            ("ZOJIRUSHI", "象印"),
+        ]:
+            self.assertEqual(model_numbers.detect_maker_from_text([text]), maker, text)
+
     def test_gpu_setting_can_be_forced_by_environment(self):
         import os
         from unittest import mock

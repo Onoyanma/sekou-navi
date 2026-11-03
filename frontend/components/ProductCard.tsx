@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ExternalLink, Tag } from "lucide-react";
+import { buildManualSearchLinks } from "@/lib/manualLinks";
 
 type ProductCardProduct = {
   id: number;
@@ -22,6 +23,14 @@ const SOURCE_LABELS: Record<string, string> = {
   semantic: "意味が近い",
 };
 
+export type MatchConfidence = "high" | "medium" | "low";
+
+const CONFIDENCE_BADGES: Record<MatchConfidence, { label: string; className: string }> = {
+  high: { label: "確度 高", className: "bg-emerald-600 text-white" },
+  medium: { label: "確度 中（型番を確認）", className: "bg-amber-500 text-white" },
+  low: { label: "確度 低（参考）", className: "bg-slate-500 text-white" },
+};
+
 type ProductCardProps = {
   product: ProductCardProduct;
   darkMode: boolean;
@@ -30,6 +39,7 @@ type ProductCardProps = {
   combinedScore?: number;
   sources?: string[];
   ocrCandidate?: string;
+  confidence?: MatchConfidence;
 };
 
 export function ProductCard({
@@ -40,8 +50,13 @@ export function ProductCard({
   combinedScore,
   sources,
   ocrCandidate,
+  confidence,
 }: ProductCardProps) {
   const imagePath = product.image_path?.split(",")[0] || "";
+  const manualSearchLink = buildManualSearchLinks(
+    product.maker,
+    product.model_number
+  )[0];
 
   return (
     <article
@@ -73,6 +88,13 @@ export function ProductCard({
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-5">
           <div>
             <div className="flex flex-wrap items-center gap-2">
+              {confidence && (
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${CONFIDENCE_BADGES[confidence].className}`}
+                >
+                  {CONFIDENCE_BADGES[confidence].label}
+                </span>
+              )}
               <span
                 className={
                   darkMode
@@ -198,15 +220,21 @@ export function ProductCard({
                 施工説明書
               </a>
             ) : (
-              <span
-                className={
-                  darkMode
-                    ? "inline-flex items-center rounded-xl bg-slate-800 px-4 py-2.5 text-sm text-slate-500"
-                    : "inline-flex items-center rounded-xl bg-slate-100 px-4 py-2.5 text-sm text-slate-400"
-                }
-              >
-                URL未登録
-              </span>
+              manualSearchLink && (
+                <a
+                  href={manualSearchLink.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className={
+                    darkMode
+                      ? "inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800"
+                      : "inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  }
+                >
+                  <ExternalLink size={16} />
+                  説明書を検索
+                </a>
+              )
             )}
           </div>
         </div>

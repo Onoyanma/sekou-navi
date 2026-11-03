@@ -15,6 +15,12 @@ from services.embeddings import (
 
 IMAGE_SCORE_BASELINE = 0.7
 
+# 統合スコアから「どれだけ信用してよいか」を 3 段階にする基準。
+# 実写真 14 枚の評価では、型番が一致した正解は 330 点以上、間違った 1 位は 97 点以下だった。
+# その間（100〜300）を「中」にしている。小さなデータからの目安なので、データが増えたら見直す。
+CONFIDENCE_HIGH_SCORE = 300
+CONFIDENCE_MEDIUM_SCORE = 100
+
 IMAGE_TYPE_WEIGHTS = {
     "型番ラベル": 1.5,
     "全体写真": 1.2,
@@ -22,6 +28,20 @@ IMAGE_TYPE_WEIGHTS = {
     "施工例": 0.7,
     "その他": 1.0,
 }
+
+
+def classify_confidence(combined_score, sources):
+    """統合スコアと根拠から、結果の確度（high / medium / low）を返す。
+
+    画像の類似だけでは別商品でも高く出るため、型番が一致した根拠がなければ high にしない。
+    """
+    if "model" in sources and combined_score >= CONFIDENCE_HIGH_SCORE:
+        return "high"
+
+    if combined_score >= CONFIDENCE_MEDIUM_SCORE:
+        return "medium"
+
+    return "low"
 
 
 def fetch_all_products():
@@ -273,6 +293,12 @@ def merge_similar_search_results(
         entry for entry in merged.values() if entry["product"] is not None
     ]
     results.sort(key=lambda x: x["combined_score"], reverse=True)
+
+    for entry in results:
+        entry["confidence"] = classify_confidence(
+            entry["combined_score"], entry["sources"]
+        )
+
     return results[:top_k]
 
 

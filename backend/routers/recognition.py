@@ -142,6 +142,8 @@ async def similar_search(
         return {
             "results": results,
             "detected_maker": detected_maker,
+            # 1 位の確度。結果が無ければ none（画面で「自信がない」ときの見せ方を変えるために使う）
+            "top_confidence": results[0]["confidence"] if results else "none",
             "ocr_candidates": [
                 {"model_number": candidate, "score": score}
                 for candidate, score in ocr_candidates[:8]
