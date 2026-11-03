@@ -44,3 +44,13 @@ python -m evaluation.evaluate_ocr --dataset evaluation/dataset --catalog-db ../p
 | 商品 Top-k 正解率 | 照合結果の上位 k 件に正しい商品が入った割合 |
 | 見つけられた割合 | 登録済みの商品を、合格スコア以上で見つけられた割合 |
 | 誤受理率 | 未登録の商品を、別の商品と取り違えた割合 |
+
+## OCR と画像検索（CLIP）の併用評価
+
+```bash
+python -m evaluation.evaluate_hybrid --dataset evaluation/dataset --catalog-db ../products.db --cache evaluation/results/ocr_cache.json
+```
+
+同じ写真で「テキストのみ」「画像のみ」「併用（アプリの挙動）」を比べます。ある写真を問い合わせにしたとき、登録済みの画像は「その写真以外すべて」とします（leave-one-out）。`--cache` は OCR 結果の保存先で、再実行が速くなります（OCR のコードを変えたら消してください）。`--min-similarity` と `--image-baseline` で、画像の足切りと点数の基準値を変えて試せます。
+
+注意: 同じ商品の写真は同じ部屋・同じ端末で撮った取り直しなので、画像検索には有利な条件です。別の角度・別の場所で撮った写真でも測るのが望ましいです。

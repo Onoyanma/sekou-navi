@@ -951,6 +951,8 @@ MAKER_ALIASES = {
     "ダイキン": ["DAIKIN", "ダイキン"],
 }
 
+IMAGE_SCORE_BASELINE = 0.7
+
 IMAGE_TYPE_WEIGHTS = {
     "型番ラベル": 1.5,
     "全体写真": 1.2,
@@ -1178,7 +1180,14 @@ def merge_similar_search_results(
 
         image_type = item.get("image_type") or "その他"
         weight = IMAGE_TYPE_WEIGHTS.get(image_type, 1.0)
-        image_score = item["similarity"] * 50 * weight
+        # CLIP の類似度は、型番ラベルのように見た目が似た写真どうしだと別商品でも高く出る。
+        # 基準値（IMAGE_SCORE_BASELINE）を超えた分だけを点数にして、似ているだけの商品が
+        # 型番の一致を押しのけないようにする（0 なら類似度にそのまま比例）。
+        # 型番ラベル写真 14 枚の評価で 0.6〜0.8 が同じ結果になる範囲だったので、中央付近の値にしている。
+        normalized_similarity = max(0.0, item["similarity"] - IMAGE_SCORE_BASELINE) / (
+            1.0 - IMAGE_SCORE_BASELINE
+        )
+        image_score = normalized_similarity * 50 * weight
 
         entry["combined_score"] += image_score
         entry["similarity"] = max(entry["similarity"], item["similarity"])
