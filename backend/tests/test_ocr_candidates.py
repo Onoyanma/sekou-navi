@@ -19,6 +19,9 @@ class ModelCandidateTest(unittest.TestCase):
         names = candidate_names(["980W/", "50/60Hz", "455mm", "100V"])
         self.assertEqual(names, [])
 
+    def test_phone_numbers_are_not_model_numbers(self):
+        self.assertEqual(candidate_names(["0120-911-026", "0120-1794-11"]), [])
+
     def test_real_model_beats_specs(self):
         names = candidate_names(["980W/1280W", "RE-CE8-KW", "50/60Hz"])
         self.assertEqual(names[0], "RE-CE8-KW")
@@ -49,6 +52,15 @@ class ModelCandidateTest(unittest.TestCase):
     def test_appliance_makers_are_detected(self):
         self.assertEqual(main.detect_maker_from_text(["SHARP", "RE-CE8-KW"]), "SHARP")
         self.assertEqual(main.detect_maker_from_text(["アイホン"]), "アイホン")
+
+    def test_gpu_setting_can_be_forced_by_environment(self):
+        import os
+        from unittest import mock
+
+        with mock.patch.dict(os.environ, {"SEKOU_OCR_GPU": "0"}):
+            self.assertFalse(main.use_gpu_for_ocr())
+        with mock.patch.dict(os.environ, {"SEKOU_OCR_GPU": "1"}):
+            self.assertTrue(main.use_gpu_for_ocr())
 
     def test_tiles_cover_the_whole_image(self):
         from PIL import Image

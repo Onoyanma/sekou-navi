@@ -652,11 +652,32 @@ OCR_MIN_CONFIDENCE = 0.3
 OCR_DARK_TILE_MEAN = 100
 
 
+def use_gpu_for_ocr():
+    """GPU（CUDA / Apple の MPS）が使えるなら使う。SEKOU_OCR_GPU=0 で無効、1 で強制。
+
+    CPU のみの環境（多くのクラウド）では従来どおり CPU で動く。
+    Apple Silicon の MPS では、同じ写真で結果を変えずに処理時間が約 3 分の 1 になった。
+    """
+    setting = os.getenv("SEKOU_OCR_GPU", "").strip()
+    if setting in ("0", "1"):
+        return setting == "1"
+
+    try:
+        import torch  # noqa: PLC0415
+
+        return bool(
+            torch.cuda.is_available()
+            or (getattr(torch.backends, "mps", None) and torch.backends.mps.is_available())
+        )
+    except Exception:
+        return False
+
+
 def get_ocr_reader():
     global _ocr_reader
 
     if _ocr_reader is None:
-        _ocr_reader = easyocr.Reader(["en", "ja"], gpu=False)
+        _ocr_reader = easyocr.Reader(["en", "ja"], gpu=use_gpu_for_ocr())
 
     return _ocr_reader
 
@@ -666,7 +687,7 @@ def get_ocr_reader_en():
     global _ocr_reader_en
 
     if _ocr_reader_en is None:
-        _ocr_reader_en = easyocr.Reader(["en"], gpu=False)
+        _ocr_reader_en = easyocr.Reader(["en"], gpu=use_gpu_for_ocr())
 
     return _ocr_reader_en
 
@@ -906,6 +927,10 @@ def extract_model_candidates(text_list):
                 continue
 
             if SPEC_PATTERN.match(upper_match):
+                continue
+
+            # 英字を含まない数字とハイフンだけの文字列は、電話番号・製造番号であって型番ではない
+            if not any(c.isalpha() for c in upper_match):
                 continue
 
             upper_match = fix_digit_context_letter_o(upper_match)
