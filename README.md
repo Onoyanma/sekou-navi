@@ -136,16 +136,18 @@ npm run dev
 ```
 
 ブラウザで http://localhost:3000 を開きます。
-初回起動時に DB（`products.db`）と画像フォルダは自動で作成されます。
+初回起動時に DB（`products.db`）と画像フォルダ（`images/`）は、**プロジェクト直下**に自動で作成されます。
+
+> **登録したデータは、あなたのパソコンの中だけに保存されます。** `products.db`・`images/`・評価用の写真（`backend/evaluation/dataset/`）は `.gitignore` で除外してあり、GitHub には上がりません。このリポジトリを取得した人は、空の状態から使い始めます。フォルダごとZIPで送る・クラウドで共有する場合は、これらも含まれるので注意してください。
 
 ### 設定（環境変数）
 
 | 変数 | 用途 | 既定値 |
 |---|---|---|
 | `NEXT_PUBLIC_API_BASE_URL` | フロントエンドが呼び出す API の URL（`frontend/.env.local` に記述） | `http://127.0.0.1:8000` |
-| `SEKOU_DB_PATH` | SQLite ファイルの場所 | `products.db` |
-| `SEKOU_IMAGE_DIR` | 商品画像の保存先 | `images/` |
-| `SEKOU_TEMP_DIR` | OCR・類似検索用の一時画像の保存先（解析後に自動削除） | `temp_images/` |
+| `SEKOU_DB_PATH` | SQLite ファイルの場所 | `<プロジェクト直下>/products.db` |
+| `SEKOU_IMAGE_DIR` | 商品画像の保存先 | `<プロジェクト直下>/images/` |
+| `SEKOU_TEMP_DIR` | OCR・類似検索用の一時画像の保存先（解析後に自動削除） | `<プロジェクト直下>/temp_images/` |
 | `SEKOU_OCR_GPU` | OCR で GPU（CUDA / Apple MPS）を使うか。`0` で無効、`1` で強制。未指定なら使えれば自動で使う | 自動判定 |
 | `SEKOU_CORS_ORIGINS` | API へのアクセスを許可するフロントエンドの URL（カンマ区切り） | `http://localhost:3000,http://127.0.0.1:3000` |
 
