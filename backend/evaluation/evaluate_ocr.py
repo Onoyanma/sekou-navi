@@ -20,6 +20,7 @@ import csv
 import json
 import os
 import re
+import shutil
 import statistics
 import tempfile
 import time
@@ -172,6 +173,14 @@ def summarize(results: list[CaseResult]) -> dict:
     return metrics
 
 
+def read_in_temp_copy(main_module, image_path: str) -> list[str]:
+    """前処理の中間ファイルでデータセットを汚さないよう、一時フォルダのコピーを OCR する。"""
+    with tempfile.TemporaryDirectory(prefix="sekou_navi_ocr_") as tmp:
+        copy = os.path.join(tmp, os.path.basename(image_path))
+        shutil.copyfile(image_path, copy)
+        return main_module.extract_text_from_image(copy)
+
+
 def run(dataset_dir: Path, use_stubs: bool = False) -> Report:
     # 本番の DB を触らないよう、main を import する前に保存先を一時フォルダへ向ける
     root = tempfile.mkdtemp(prefix="sekou_navi_eval_")
@@ -192,7 +201,7 @@ def run(dataset_dir: Path, use_stubs: bool = False) -> Report:
         evaluate_case(
             case,
             dataset_dir,
-            main.extract_text_from_image,
+            lambda path: read_in_temp_copy(main, path),
             main.extract_model_candidates,
             main.detect_maker_from_text,
         )
