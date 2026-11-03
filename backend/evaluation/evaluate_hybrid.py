@@ -75,10 +75,10 @@ def evaluate_queries(
     cases: list[Case],
     features: dict,
     catalog: list[dict],
-    main,
+    pipeline,
     min_similarity: Optional[float] = None,
 ) -> list[QueryResult]:
-    min_similarity = main.MIN_SIMILARITY if min_similarity is None else min_similarity
+    min_similarity = pipeline.MIN_SIMILARITY if min_similarity is None else min_similarity
     product_by_model = {normalize_model(p["model_number"]): p for p in catalog}
     results = []
 
@@ -91,10 +91,10 @@ def evaluate_queries(
         ]
 
         texts = feature["texts"]
-        candidates = main.extract_model_candidates(texts)
-        maker = main.detect_maker_from_text(texts)
-        hints = main.extract_product_name_hints(texts)
-        similar_models = main.find_similar_model_numbers(candidates, catalog)
+        candidates = pipeline.extract_model_candidates(texts)
+        maker = pipeline.detect_maker_from_text(texts)
+        hints = pipeline.extract_product_name_hints(texts)
+        similar_models = pipeline.find_similar_model_numbers(candidates, catalog)
 
         # アプリと同じ形式の画像検索結果（商品ごとに最良の 1 枚）
         image_ranking = image_only_ranking(
@@ -102,7 +102,7 @@ def evaluate_queries(
         )
         image_results = [
             {
-                "product": main.product_row_to_result(product_by_model[model]),
+                "product": pipeline.product_row_to_result(product_by_model[model]),
                 "similarity": similarity,
                 "matched_image_path": "",
                 "image_type": LABEL_IMAGE_TYPE,
@@ -111,7 +111,7 @@ def evaluate_queries(
         ]
 
         def merged_ranking(images):
-            merged = main.merge_similar_search_results(
+            merged = pipeline.merge_similar_search_results(
                 images, candidates, maker, similar_models, catalog, hints, top_k=len(catalog)
             )
             return [(r["combined_score"], r["product"]["model_number"]) for r in merged]
@@ -197,7 +197,7 @@ def render_markdown(results: list[QueryResult], metrics: dict, dataset_name: str
     return "\n".join(lines) + "\n"
 
 
-def collect_features(dataset_dir: Path, cases: list[Case], main, cache_path: Optional[Path]) -> dict:
+def collect_features(dataset_dir: Path, cases: list[Case], pipeline, cache_path: Optional[Path]) -> dict:
     """各写真の OCR テキストと CLIP 埋め込みを求める（OCR は遅いのでキャッシュできる）。"""
     from evaluation.evaluate_ocr import read_in_temp_copy
 
@@ -216,12 +216,12 @@ def collect_features(dataset_dir: Path, cases: list[Case], main, cache_path: Opt
         elif cached and cached["stamp"] == stamp:
             texts = cached["texts"]
         else:
-            texts = read_in_temp_copy(main, str(path))
+            texts = read_in_temp_copy(pipeline, str(path))
             cache[case.image] = {"stamp": stamp, "texts": texts}
 
         features[case.image] = {
             "texts": texts,
-            "embedding": main.normalize_embedding_vector(main.get_image_embedding(str(path))).ravel(),
+            "embedding": pipeline.normalize_embedding_vector(pipeline.get_image_embedding(str(path))).ravel(),
         }
 
     if cache_path:
@@ -243,15 +243,17 @@ def run(
     os.environ["SEKOU_IMAGE_DIR"] = os.path.join(root, "images")
     os.environ["SEKOU_TEMP_DIR"] = os.path.join(root, "temp_images")
 
-    import main  # noqa: PLC0415
+    from evaluation.pipeline import load_pipeline, set_image_baseline  # noqa: PLC0415
 
     if image_baseline is not None:
-        main.IMAGE_SCORE_BASELINE = image_baseline
+        set_image_baseline(image_baseline)
+
+    pipeline = load_pipeline()
 
     cases = load_cases(dataset_dir)
     catalog = build_catalog(cases, catalog_db)
-    features = collect_features(dataset_dir, cases, main, cache_path)
-    results = evaluate_queries(cases, features, catalog, main, min_similarity)
+    features = collect_features(dataset_dir, cases, pipeline, cache_path)
+    results = evaluate_queries(cases, features, catalog, pipeline, min_similarity)
     return results, summarize(results), len(catalog)
 
 

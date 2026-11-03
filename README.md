@@ -70,8 +70,11 @@
 sekou_navi/
 ├── frontend/       # Next.js (React / TypeScript / Tailwind CSS) の Web UI
 ├── backend/        # FastAPI の REST API（OCR・類似検索・商品管理）
-│   ├── main.py     # API エンドポイント
-│   ├── ai.py       # 型番抽出・商品名推定・自動タグ付けのロジック
+│   ├── main.py     # アプリの組み立て（CORS・ルーターの登録・起動時の処理）
+│   ├── routers/    # API エンドポイント（products / recognition / autocomplete / search）
+│   ├── services/   # OCR・型番抽出・埋め込み・照合・検索・バーコードのロジック
+│   ├── schemas.py  # リクエストの型
+│   ├── ai.py       # 型番・URL からの入力補完のロジック
 │   ├── database.py # DB スキーマの作成・移行、保存先の設定
 │   ├── evaluation/ # 精度評価（Top-k 正解率・DB 照合・画像検索との併用）
 │   └── tests/      # API・DB のテスト

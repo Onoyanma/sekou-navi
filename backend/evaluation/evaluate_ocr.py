@@ -240,12 +240,12 @@ def summarize(results: list[CaseResult], threshold: float = MATCH_SCORE_THRESHOL
     return metrics
 
 
-def read_in_temp_copy(main_module, image_path: str) -> list[str]:
+def read_in_temp_copy(pipeline, image_path: str) -> list[str]:
     """前処理の中間ファイルでデータセットを汚さないよう、一時フォルダのコピーを OCR する。"""
     with tempfile.TemporaryDirectory(prefix="sekou_navi_ocr_") as tmp:
         copy = os.path.join(tmp, os.path.basename(image_path))
         shutil.copyfile(image_path, copy)
-        return main_module.extract_text_from_image(copy)
+        return pipeline.extract_text_from_image(copy)
 
 
 def build_catalog(cases: list[Case], catalog_db: Optional[Path] = None) -> list[dict]:
@@ -295,7 +295,7 @@ def run(
     catalog_db: Optional[Path] = None,
     threshold: float = MATCH_SCORE_THRESHOLD,
 ) -> Report:
-    # 本番の DB を触らないよう、main を import する前に保存先を一時フォルダへ向ける
+    # 本番の DB を触らないよう、アプリの処理を import する前に保存先を一時フォルダへ向ける
     root = tempfile.mkdtemp(prefix="sekou_navi_eval_")
     os.environ["SEKOU_DB_PATH"] = os.path.join(root, "eval.db")
     os.environ["SEKOU_IMAGE_DIR"] = os.path.join(root, "images")
@@ -307,7 +307,9 @@ def run(
 
         install_stubs()
 
-    import main  # noqa: PLC0415
+    from evaluation.pipeline import load_pipeline  # noqa: PLC0415
+
+    pipeline = load_pipeline()
 
     cases = load_cases(dataset_dir)
     catalog = build_catalog(cases, catalog_db)
@@ -315,11 +317,11 @@ def run(
         evaluate_case(
             case,
             dataset_dir,
-            lambda path: read_in_temp_copy(main, path),
-            main.extract_model_candidates,
-            main.detect_maker_from_text,
+            lambda path: read_in_temp_copy(pipeline, path),
+            pipeline.extract_model_candidates,
+            pipeline.detect_maker_from_text,
             catalog=catalog,
-            score_product=main.score_product_from_ocr,
+            score_product=pipeline.score_product_from_ocr,
         )
         for case in cases
     ]

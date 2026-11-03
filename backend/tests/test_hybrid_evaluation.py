@@ -10,12 +10,12 @@ from tests.stubs import install_stubs, use_temporary_storage
 use_temporary_storage()
 install_stubs()
 
-import main  # noqa: E402
+from services import matching  # noqa: E402
 
 
 def merge_image_only(similarity, image_type="その他"):
     product = {"id": 1, "maker": "", "model_number": "AB-100", "product_name": ""}
-    results = main.merge_similar_search_results(
+    results = matching.merge_similar_search_results(
         [{"product": product, "similarity": similarity, "image_type": image_type}],
         [], "", [], [], [],
     )
@@ -47,22 +47,22 @@ class ImageOnlyRankingTest(unittest.TestCase):
 
 class ImageScoreBaselineTest(unittest.TestCase):
     def setUp(self):
-        self.original = main.IMAGE_SCORE_BASELINE
+        self.original = matching.IMAGE_SCORE_BASELINE
 
     def tearDown(self):
-        main.IMAGE_SCORE_BASELINE = self.original
+        matching.IMAGE_SCORE_BASELINE = self.original
 
     def test_similarity_at_baseline_adds_nothing(self):
-        main.IMAGE_SCORE_BASELINE = 0.7
+        matching.IMAGE_SCORE_BASELINE = 0.7
         self.assertAlmostEqual(merge_image_only(0.7), 0.0)
         self.assertAlmostEqual(merge_image_only(0.5), 0.0)
 
     def test_perfect_similarity_gets_full_score(self):
-        main.IMAGE_SCORE_BASELINE = 0.7
+        matching.IMAGE_SCORE_BASELINE = 0.7
         self.assertAlmostEqual(merge_image_only(1.0), 50.0)
 
     def test_zero_baseline_keeps_proportional_scoring(self):
-        main.IMAGE_SCORE_BASELINE = 0.0
+        matching.IMAGE_SCORE_BASELINE = 0.0
         self.assertAlmostEqual(merge_image_only(0.5), 25.0)
 
 
