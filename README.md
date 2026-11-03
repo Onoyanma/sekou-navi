@@ -9,7 +9,7 @@
   <img src="assets/demo.gif" alt="施工ナビのデモ：型番ラベルを撮影し、登録済みなら確度「高」、未登録なら確度「低」と登録・説明書検索の導線を表示" width="280">
 </p>
 
-<p align="center"><sub>画面のスクリーンショットをつないだものです（左から：撮影 → 登録済みの商品 → 未登録の商品）。実際の画面は <a href="assets/screenshots">assets/screenshots</a> にあります。</sub></p>
+<p align="center"><sub>画面のスクリーンショットをつないだものです（ホーム → 撮影 → 登録済みの商品 → 未登録の商品）。実際の画面は <a href="assets/screenshots">assets/screenshots</a> にあります。</sub></p>
 
 ## 開発の背景
 

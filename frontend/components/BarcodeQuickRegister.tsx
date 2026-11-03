@@ -12,6 +12,7 @@ import {
   saveBarcodeRegisterDraft,
   type BarcodeRegisterDraft,
 } from "@/lib/barcode";
+import { fieldClass, primaryButton } from "@/components/ui";
 
 const CATEGORIES = [
   "キッチン",
@@ -52,13 +53,11 @@ export function BarcodeQuickRegister({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const inputClass = darkMode
-    ? "mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
-    : "mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500";
+  const inputClass = `${fieldClass(darkMode)} mt-1.5`;
 
   const labelClass = darkMode
-    ? "text-sm font-semibold text-slate-300"
-    : "text-sm font-semibold text-slate-600";
+    ? "text-sm font-semibold text-ink-300"
+    : "text-sm font-semibold text-ink-600";
 
   async function handleSubmit() {
     if (!model.trim()) {
@@ -111,7 +110,7 @@ export function BarcodeQuickRegister({
           className={
             darkMode
               ? "text-base font-bold text-white"
-              : "text-base font-bold text-slate-900"
+              : "text-base font-bold text-ink-900"
           }
         >
           未登録の商品です
@@ -119,8 +118,8 @@ export function BarcodeQuickRegister({
         <p
           className={
             darkMode
-              ? "mt-2 text-sm text-slate-400"
-              : "mt-2 text-sm text-slate-500"
+              ? "mt-2 text-sm text-ink-400"
+              : "mt-2 text-sm text-ink-500"
           }
         >
           読み取ったコードに一致する商品がありません。ここからそのまま登録できます。
@@ -128,8 +127,8 @@ export function BarcodeQuickRegister({
         <p
           className={
             darkMode
-              ? "mt-2 font-mono text-sm text-violet-300"
-              : "mt-2 font-mono text-sm text-violet-700"
+              ? "mt-2 font-mono text-sm text-brand-300"
+              : "mt-2 font-mono text-sm text-brand-700"
           }
         >
           {scannedCode}
@@ -195,7 +194,7 @@ export function BarcodeQuickRegister({
           type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          className={`${primaryButton}`}
         >
           {loading ? (
             <Loader2 size={18} className="animate-spin" />
@@ -209,8 +208,8 @@ export function BarcodeQuickRegister({
           onClick={openFullRegister}
           className={
             darkMode
-              ? "inline-flex items-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
-              : "inline-flex items-center rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              ? "inline-flex items-center rounded-xl border border-ink-700 px-5 py-3 text-sm font-semibold text-ink-200 hover:bg-ink-800"
+              : "inline-flex items-center rounded-xl border border-ink-200 px-5 py-3 text-sm font-semibold text-ink-700 hover:bg-ink-50"
           }
         >
           詳細を入力して登録

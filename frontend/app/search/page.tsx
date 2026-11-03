@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Camera,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   Image as ImageIcon,
-  Images,
   Loader2,
   Package,
   Search,
-  Sparkles,
   TriangleAlert,
   X,
 } from "lucide-react";
@@ -23,6 +24,14 @@ import {
   type Product,
 } from "@/lib/products";
 import { apiUrl } from "@/lib/api";
+import {
+  dangerButton,
+  fieldClass,
+  chip as chipLabel,
+  primaryButton,
+  secondaryButton,
+  tonalButton,
+} from "@/components/ui";
 
 type SimilarImageResult = {
   similarity: number;
@@ -65,7 +74,7 @@ export default function SearchPage() {
   return (
     <AppShell
       title="検索"
-      description="キーワード・自然文・画像から、登録済みの施工商品を探します"
+      description="登録済みの商品を探します"
     >
       <SearchContent />
     </AppShell>
@@ -95,8 +104,17 @@ function SearchContent() {
   const [imageSearchInsight, setImageSearchInsight] =
     useState<ImageSearchInsight | null>(null);
   const [imageSearchError, setImageSearchError] = useState("");
+  const [showModes, setShowModes] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // ホームの「写真で探す」から来たときは、最初から画像のタブを開く
+    if (new URLSearchParams(window.location.search).get("tab") === "image") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSearchTab("image");
+    }
+  }, []);
 
   useEffect(() => {
     // localStorage はブラウザでしか読めないため、表示後に一度だけ読み込む
@@ -358,125 +376,72 @@ function SearchContent() {
     hybrid: "キーワード一致と意味検索の両方を組み合わせます（おすすめ）",
   };
 
-  const placeholder: Record<TextSearchMode, string> = {
-    keyword: "例：TOTO、TCF、トイレ",
-    semantic: "例：トイレの止水栓の部品、キッチンの水栓",
-    hybrid: "例：TOTO トイレ 部品、洗面の水栓を探したい",
-  };
-
-  const inputClass = darkMode
-    ? "w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-11 pr-4 text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-    : "w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
+  const inputClass = `${fieldClass(darkMode)} pl-12 pr-4`;
 
   const chipClass = darkMode
-    ? "rounded-full bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-blue-600 hover:text-white"
-    : "rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-blue-600 hover:text-white";
+    ? "min-h-10 rounded-full bg-ink-800 px-4 text-sm text-ink-200 hover:bg-ink-700"
+    : "min-h-10 rounded-full bg-white px-4 text-sm text-ink-700 shadow-card hover:bg-brand-50";
 
-  const tabBase =
-    "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition";
+  const muted = darkMode ? "text-ink-400" : "text-ink-500";
+  const visibleImageResults = isLowConfidence
+    ? similarImageResults.slice(0, LOW_CONFIDENCE_RESULT_LIMIT)
+    : similarImageResults;
+  const tabs = [
+    { id: "keyword", label: "キーワード", icon: Search },
+    { id: "image", label: "写真", icon: Camera },
+  ] as const;
+  const modeLabel: Record<TextSearchMode, string> = {
+    hybrid: "おまかせ（おすすめ）",
+    keyword: "キーワード一致",
+    semantic: "意味で探す",
+  };
 
   return (
-    <div className="space-y-6">
-      <div className={`${surfaceClass(darkMode)} p-5 md:p-6`}>
+    <div className="space-y-5">
+      <div className="space-y-4">
         <div
-          className={
-            darkMode
-              ? "mb-5 flex rounded-xl bg-slate-800 p-1"
-              : "mb-5 flex rounded-xl bg-slate-100 p-1"
-          }
+          role="tablist"
+          className={`flex rounded-2xl p-1 ${darkMode ? "bg-ink-900" : "bg-ink-200/60"}`}
         >
-          <button
-            type="button"
-            onClick={() => setSearchTab("keyword")}
-            className={
-              searchTab === "keyword"
-                ? `${tabBase} ${
-                    darkMode
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "bg-white text-slate-900 shadow-sm"
-                  }`
-                : `${tabBase} ${darkMode ? "text-slate-400" : "text-slate-500"}`
-            }
-          >
-            <Search size={18} />
-            キーワード
-          </button>
-          <button
-            type="button"
-            onClick={() => setSearchTab("image")}
-            className={
-              searchTab === "image"
-                ? `${tabBase} ${
-                    darkMode
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "bg-white text-slate-900 shadow-sm"
-                  }`
-                : `${tabBase} ${darkMode ? "text-slate-400" : "text-slate-500"}`
-            }
-          >
-            <Images size={18} />
-            画像
-          </button>
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = searchTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setSearchTab(tab.id)}
+                className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition ${
+                  active
+                    ? darkMode
+                      ? "bg-ink-700 text-white shadow-sm"
+                      : "bg-white text-ink-900 shadow-sm"
+                    : muted
+                }`}
+              >
+                <Icon size={18} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {searchTab === "keyword" && (
           <div className="space-y-4">
-            <div
-              className={
-                darkMode
-                  ? "flex flex-wrap gap-2 rounded-xl bg-slate-950 p-1"
-                  : "flex flex-wrap gap-2 rounded-xl bg-slate-100 p-1"
-              }
-            >
-              {(
-                [
-                  { id: "hybrid", label: "AI統合", icon: Sparkles },
-                  { id: "keyword", label: "キーワード", icon: Search },
-                  { id: "semantic", label: "意味検索", icon: Sparkles },
-                ] as const
-              ).map((item) => {
-                const Icon = item.icon;
-                const active = textSearchMode === item.id;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setTextSearchMode(item.id)}
-                    className={
-                      active
-                        ? "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white sm:text-sm"
-                        : darkMode
-                          ? "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-400 hover:bg-slate-800 sm:text-sm"
-                          : "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white sm:text-sm"
-                    }
-                  >
-                    <Icon size={16} />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <p
-              className={
-                darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"
-              }
-            >
-              {modeHint[textSearchMode]}
-            </p>
-
             <div className="relative">
               <Search
-                size={18}
-                className={
-                  darkMode
-                    ? "absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                    : "absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                }
+                size={20}
+                className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 ${
+                  darkMode ? "text-ink-500" : "text-ink-400"
+                }`}
               />
               <input
                 value={keyword}
+                type="search"
+                enterKeyHint="search"
                 onChange={(e) => {
                   const value = e.target.value;
                   setKeyword(value);
@@ -489,70 +454,139 @@ function SearchContent() {
                     setSuggestions([]);
                   }
                 }}
-                placeholder={placeholder[textSearchMode]}
+                placeholder="型番・メーカー・商品名"
                 className={inputClass}
               />
               {textSearchLoading && (
                 <Loader2
                   size={18}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-blue-500"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-brand-500"
                 />
               )}
             </div>
 
-            {searchHistory.length > 0 && (
-              <div>
-                <p
-                  className={`mb-2 flex items-center gap-2 text-sm font-semibold ${
-                    darkMode ? "text-slate-300" : "text-slate-600"
-                  }`}
-                >
-                  <Clock size={16} />
-                  最近の検索
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {searchHistory.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => {
-                        setKeyword(item);
-                        void runTextSearch(item, textSearchMode);
-                      }}
-                      className={chipClass}
-                    >
-                      {item}
-                    </button>
-                  ))}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowModes((value) => !value)}
+                aria-expanded={showModes}
+                className={`inline-flex min-h-9 items-center gap-1 text-sm ${muted}`}
+              >
+                探し方：{modeLabel[textSearchMode]}
+                <ChevronDown
+                  size={16}
+                  className={`transition ${showModes ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {showModes && (
+                <div className="mt-2 space-y-2">
+                  <div
+                    className={`flex rounded-xl p-1 ${darkMode ? "bg-ink-900" : "bg-ink-200/60"}`}
+                  >
+                    {(
+                      [
+                        { id: "hybrid", label: "おまかせ" },
+                        { id: "keyword", label: "一致" },
+                        { id: "semantic", label: "意味" },
+                      ] as const
+                    ).map((item) => {
+                      const active = textSearchMode === item.id;
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setTextSearchMode(item.id)}
+                          className={`min-h-10 flex-1 whitespace-nowrap rounded-lg px-3 text-sm font-semibold transition ${
+                            active
+                              ? darkMode
+                                ? "bg-ink-700 text-white"
+                                : "bg-white text-ink-900 shadow-sm"
+                              : muted
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className={`text-xs leading-relaxed ${muted}`}>
+                    {modeHint[textSearchMode]}
+                  </p>
                 </div>
+              )}
+            </div>
+
+            {suggestions.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => {
+                      setKeyword(suggestion);
+                      setSuggestions([]);
+                      void runTextSearch(suggestion, textSearchMode);
+                    }}
+                    className={chipClass}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
               </div>
             )}
 
-            {suggestions.length > 0 && (
-              <div>
-                <p
-                  className={`mb-2 text-sm font-semibold ${
-                    darkMode ? "text-slate-300" : "text-slate-600"
-                  }`}
-                >
-                  候補
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestions.map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => {
-                        setKeyword(suggestion);
-                        setSuggestions([]);
-                        void runTextSearch(suggestion, textSearchMode);
-                      }}
-                      className={chipClass}
+            {!hasKeywordSearch && (
+              <div className="space-y-5 pt-1">
+                {searchHistory.length > 0 && (
+                  <div>
+                    <p
+                      className={`mb-2 flex items-center gap-1.5 text-sm font-semibold ${muted}`}
                     >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
+                      <Clock size={15} />
+                      最近の検索
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {searchHistory.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            setKeyword(item);
+                            void runTextSearch(item, textSearchMode);
+                          }}
+                          className={chipClass}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSearchTab("image")}
+                  className={`${surfaceClass(darkMode)} flex w-full items-center gap-4 p-4 text-left transition active:scale-[0.99]`}
+                >
+                  <span
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
+                      darkMode ? "bg-brand-950 text-brand-300" : "bg-brand-50 text-brand-600"
+                    }`}
+                  >
+                    <Camera size={22} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-bold">
+                      型番がわからないときは、写真で探す
+                    </span>
+                    <span className={`mt-0.5 block text-sm ${muted}`}>
+                      型番ラベルを撮ると、登録済みの商品を探します
+                    </span>
+                  </span>
+                  <ChevronRight size={18} className={muted} />
+                </button>
               </div>
             )}
           </div>
@@ -560,24 +594,33 @@ function SearchContent() {
 
         {searchTab === "image" && (
           <div className="space-y-4">
-            <p
-              className={
-                darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"
-              }
+            <details
+              open={imageSearchFiles.length === 0}
+              className={`group rounded-2xl px-4 py-3 ${
+                darkMode ? "bg-ink-900" : "bg-brand-50"
+              }`}
             >
-              写真から画像の類似・型番・メーカー・商品名を読み取り、登録済み商品を探します
-            </p>
-            <ul
-              className={
-                darkMode
-                  ? "list-inside list-disc space-y-1 rounded-xl bg-slate-950 p-4 text-sm text-slate-400"
-                  : "list-inside list-disc space-y-1 rounded-xl bg-slate-50 p-4 text-sm text-slate-600"
-              }
-            >
-              <li>型番ラベルに近づいて、文字が画面いっぱいになるように撮る</li>
-              <li>照明の反射や影を避け、ラベルに正面から向ける</li>
-              <li>読めないときは、ラベルだけを写した写真を追加する</li>
-            </ul>
+              <summary
+                className={`flex min-h-8 cursor-pointer list-none items-center justify-between text-sm font-bold ${
+                  darkMode ? "text-brand-300" : "text-brand-800"
+                }`}
+              >
+                うまく撮るコツ
+                <ChevronDown
+                  size={16}
+                  className="transition group-open:rotate-180"
+                />
+              </summary>
+              <ul
+                className={`mt-2 list-inside list-disc space-y-1.5 text-sm leading-relaxed ${
+                  darkMode ? "text-ink-300" : "text-ink-700"
+                }`}
+              >
+                <li>型番ラベルに近づいて、文字が画面いっぱいになるように撮る</li>
+                <li>照明の反射や影を避け、ラベルに正面から向ける</li>
+                <li>読めないときは、ラベルだけを写した写真を追加する</li>
+              </ul>
+            </details>
 
             <input
               ref={imageInputRef}
@@ -602,129 +645,93 @@ function SearchContent() {
               }}
             />
 
-            <div className="flex flex-wrap items-start gap-3">
+            <div className="grid gap-2.5">
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={imageSearchLoading}
-                className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                className={`${primaryButton} min-h-14 w-full text-base`}
               >
-                <Camera size={28} />
-                <span className="text-sm font-semibold">撮影</span>
+                {imageSearchLoading ? (
+                  <Loader2 size={22} className="animate-spin" />
+                ) : (
+                  <Camera size={22} />
+                )}
+                {imageSearchFiles.length > 0 ? "写真を追加で撮る" : "写真を撮る"}
               </button>
               <button
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
                 disabled={imageSearchLoading}
-                className={
-                  darkMode
-                    ? "flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950 text-slate-400 hover:border-emerald-500 hover:text-emerald-400 disabled:opacity-50"
-                    : "flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-500 hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-50"
-                }
+                className={`${secondaryButton(darkMode)} w-full`}
               >
-                {imageSearchLoading ? (
-                  <Loader2 size={24} className="animate-spin" />
-                ) : (
-                  <>
-                    <ImageIcon size={24} />
-                    <span className="text-xs font-medium">追加</span>
-                  </>
-                )}
+                <ImageIcon size={20} />
+                アルバムから選ぶ
               </button>
-
-              {imageSearchFiles.map((image) => (
-                <div key={image.id} className="relative shrink-0">
-                  <img
-                    src={image.previewUrl}
-                    alt={image.file.name}
-                    className="h-24 w-24 rounded-2xl border object-cover shadow-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImageSearchFile(image.id)}
-                    disabled={imageSearchLoading}
-                    className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow hover:bg-red-600 disabled:opacity-50"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
             </div>
 
             {imageSearchFiles.length > 0 && (
-              <div className="flex flex-wrap items-center gap-3">
-                <p
-                  className={
-                    darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"
-                  }
-                >
-                  {imageSearchLoading
-                    ? `${imageSearchFiles.length}枚を解析中...（10秒ほどかかることがあります）`
-                    : `${imageSearchFiles.length}枚で検索済み`}
-                </p>
-                {!imageSearchLoading && (
-                  <button
-                    type="button"
-                    onClick={clearImageSearch}
-                    className={
-                      darkMode
-                        ? "text-sm font-medium text-red-400 hover:text-red-300"
-                        : "text-sm font-medium text-red-600 hover:text-red-700"
-                    }
-                  >
-                    すべて削除
-                  </button>
-                )}
+              <div className="space-y-3">
+                <div className="flex gap-3 overflow-x-auto pb-1 pt-2">
+                  {imageSearchFiles.map((image) => (
+                    <div key={image.id} className="relative shrink-0">
+                      <img
+                        src={image.previewUrl}
+                        alt={image.file.name}
+                        className="h-20 w-20 rounded-2xl object-cover shadow-card"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImageSearchFile(image.id)}
+                        disabled={imageSearchLoading}
+                        aria-label="この写真を外す"
+                        className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-ink-800 text-white shadow hover:bg-ink-900 disabled:opacity-50"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className={`flex items-center gap-2 text-sm ${muted}`}>
+                    {imageSearchLoading && (
+                      <Loader2 size={15} className="animate-spin text-brand-500" />
+                    )}
+                    {imageSearchLoading
+                      ? "解析しています（10秒ほどかかることがあります）"
+                      : `${imageSearchFiles.length}枚で検索しました`}
+                  </p>
+                  {!imageSearchLoading && (
+                    <button
+                      type="button"
+                      onClick={clearImageSearch}
+                      className={`min-h-10 px-2 text-sm font-semibold ${
+                        darkMode ? "text-red-400" : "text-red-600"
+                      }`}
+                    >
+                      やり直す
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {isImageSearchMode && imageSearchInsight && !imageSearchLoading && (
-        <div className={`${surfaceClass(darkMode)} p-4 md:p-5`}>
-          <p
-            className={
-              darkMode
-                ? "text-sm font-semibold text-white"
-                : "text-sm font-semibold text-slate-900"
-            }
-          >
-            画像から読み取った情報
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {imageSearchInsight.detected_maker && (
-              <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
-                メーカー: {imageSearchInsight.detected_maker}
-              </span>
-            )}
-            {imageSearchInsight.ocr_candidates.slice(0, 4).map((candidate) => (
-              <span
-                key={candidate.model_number}
-                className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700"
-              >
-                型番 {candidate.model_number}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {imageSearchError && (
         <div
           role="alert"
-          className={
-            darkMode
-              ? "flex flex-wrap items-center gap-3 rounded-xl border border-red-900 bg-red-950/50 px-4 py-3 text-sm text-red-300"
-              : "flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          }
+          className={`flex flex-col gap-3 rounded-2xl px-4 py-3.5 text-sm sm:flex-row sm:items-center ${
+            darkMode ? "bg-red-950/50 text-red-300" : "bg-red-50 text-red-800"
+          }`}
         >
-          <span className="flex-1">{imageSearchError}</span>
+          <span className="flex-1 leading-relaxed">{imageSearchError}</span>
           {imageSearchFiles.length > 0 && (
             <button
               type="button"
               onClick={() => void runImageSearch()}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              className={dangerButton}
             >
               もう一度解析する
             </button>
@@ -736,45 +743,47 @@ function SearchContent() {
         <>
           {imageSearchInsight.top_confidence === "high" && (
             <p
-              className={
+              className={`flex items-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-semibold ${
                 darkMode
-                  ? "rounded-xl border border-emerald-800 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300"
-                  : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-              }
+                  ? "bg-brand-950 text-brand-300"
+                  : "bg-brand-50 text-brand-800"
+              }`}
             >
-              型番が一致する商品が見つかりました。
+              <CheckCircle2 size={18} className="shrink-0" />
+              型番が一致する商品が見つかりました
             </p>
           )}
           {imageSearchInsight.top_confidence === "medium" && (
             <p
-              className={
-                darkMode
-                  ? "rounded-xl border border-amber-800 bg-amber-950/50 px-4 py-3 text-sm text-amber-300"
-                  : "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-              }
+              className={`flex items-center gap-2 rounded-2xl px-4 py-3.5 text-sm ${
+                darkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-50 text-amber-900"
+              }`}
             >
-              候補です。実物のラベルの型番と一致するか確認してください。
+              <TriangleAlert size={18} className="shrink-0" />
+              候補です。実物のラベルの型番と一致するか確認してください
             </p>
           )}
           {isLowConfidence && (
             <div
               role="status"
-              className={
-                darkMode
-                  ? "flex flex-col gap-3 rounded-xl border border-amber-800 bg-amber-950/50 px-4 py-3 text-sm text-amber-300 sm:flex-row sm:items-center"
-                  : "flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center"
-              }
+              className={`space-y-3 rounded-2xl px-4 py-3.5 text-sm ${
+                darkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-50 text-amber-900"
+              }`}
             >
-              <div className="flex flex-1 items-start gap-3">
+              <div className="flex items-start gap-3">
                 <TriangleAlert size={18} className="mt-0.5 shrink-0" />
-                <span>
-                  自信を持って特定できませんでした。表示している結果は参考です。型番がわかる場合は、型番を入力して探してください。
+                <span className="leading-relaxed">
+                  自信を持って特定できませんでした。下の結果は参考です。型番がわかる場合は、型番を入力して探してください。
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => switchToKeywordSearch(topOcrCandidate)}
-                className="rounded-lg bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700 sm:shrink-0 sm:py-2"
+                className={`inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold transition sm:w-auto ${
+                  darkMode
+                    ? "bg-amber-900/60 text-amber-100 hover:bg-amber-900"
+                    : "bg-white text-amber-900 shadow-card hover:bg-amber-100"
+                }`}
               >
                 型番を入力して探す
               </button>
@@ -791,31 +800,30 @@ function SearchContent() {
       )}
 
       {isImageSearchMode ? (
-        <section className="space-y-4">
-          <h2
-            className={`flex items-center gap-2 text-lg font-bold ${
-              darkMode ? "text-white" : "text-slate-900"
-            }`}
-          >
-            <Images size={20} className="text-emerald-600" />
-            類似画像の商品
-            <span
-              className={
-                darkMode
-                  ? "rounded-full bg-slate-800 px-2.5 py-0.5 text-sm font-medium text-slate-300"
-                  : "rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-600"
-              }
-            >
-              {similarImageResults.length}件
-            </span>
-          </h2>
+        <section className="space-y-3">
+          {!imageSearchLoading && (
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              {isLowConfidence ? "参考の候補" : "見つかった商品"}
+              <span className={`text-sm font-medium ${muted}`}>
+                {visibleImageResults.length}件
+              </span>
+            </h2>
+          )}
 
-          {similarImageResults.length > 0 ? (
-            <div className="grid gap-4">
-              {(isLowConfidence
-                ? similarImageResults.slice(0, LOW_CONFIDENCE_RESULT_LIMIT)
-                : similarImageResults
-              ).map((item, index) => (
+          {imageSearchLoading ? (
+            <div className="grid gap-3">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-28 animate-pulse rounded-3xl ${
+                    darkMode ? "bg-ink-900" : "bg-white/70"
+                  }`}
+                />
+              ))}
+            </div>
+          ) : visibleImageResults.length > 0 ? (
+            <div className="grid gap-3">
+              {visibleImageResults.map((item, index) => (
                 <ProductCard
                   key={`${item.product.id}_${index}`}
                   product={item.product}
@@ -830,46 +838,72 @@ function SearchContent() {
               ))}
             </div>
           ) : (
-            !imageSearchLoading && (
-              <div
-                className={`${surfaceClass(darkMode)} p-10 text-center text-sm ${
-                  darkMode ? "text-slate-400" : "text-slate-500"
-                }`}
+            <div
+              className={`${surfaceClass(darkMode)} px-6 py-10 text-center text-sm ${muted}`}
+            >
+              類似する商品が見つかりませんでした
+            </div>
+          )}
+
+          {imageSearchInsight && !imageSearchLoading && (
+            <details className="group pt-2">
+              <summary
+                className={`flex min-h-10 cursor-pointer list-none items-center gap-1 text-sm font-medium ${muted}`}
               >
-                類似する商品が見つかりませんでした
+                <ChevronRight
+                  size={15}
+                  className="transition group-open:rotate-90"
+                />
+                写真から読み取った内容
+              </summary>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {imageSearchInsight.detected_maker && (
+                  <span className={chipLabel(darkMode)}>
+                    メーカー: {imageSearchInsight.detected_maker}
+                  </span>
+                )}
+                {imageSearchInsight.ocr_candidates
+                  .slice(0, 4)
+                  .map((candidate) => (
+                    <span
+                      key={candidate.model_number}
+                      className={`${chipLabel(darkMode)} font-mono`}
+                    >
+                      {candidate.model_number}
+                    </span>
+                  ))}
+                {!imageSearchInsight.detected_maker &&
+                  imageSearchInsight.ocr_candidates.length === 0 && (
+                    <span className={`text-sm ${muted}`}>
+                      文字を読み取れませんでした
+                    </span>
+                  )}
               </div>
-            )
+            </details>
           )}
         </section>
       ) : hasKeywordSearch ? (
-        <section className="space-y-4">
-          <h2
-            className={`flex items-center gap-2 text-lg font-bold ${
-              darkMode ? "text-white" : "text-slate-900"
-            }`}
-          >
-            <Package size={20} className="text-blue-600" />
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-xl font-bold">
             検索結果
-            <span
-              className={
-                darkMode
-                  ? "rounded-full bg-slate-800 px-2.5 py-0.5 text-sm font-medium text-slate-300"
-                  : "rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-600"
-              }
-            >
-              {searchResults.length}件
+            <span className={`text-sm font-medium ${muted}`}>
+              {textSearchLoading ? "" : `${searchResults.length}件`}
             </span>
           </h2>
 
           {textSearchLoading ? (
-            <div
-              className={`${surfaceClass(darkMode)} flex items-center justify-center gap-2 p-10 text-sm`}
-            >
-              <Loader2 size={18} className="animate-spin" />
-              AIが検索しています...
+            <div className="grid gap-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-28 animate-pulse rounded-3xl ${
+                    darkMode ? "bg-ink-900" : "bg-white/70"
+                  }`}
+                />
+              ))}
             </div>
           ) : searchResults.length > 0 ? (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {searchResults.map((item) => (
                 <ProductCard
                   key={item.product.id}
@@ -884,11 +918,18 @@ function SearchContent() {
             </div>
           ) : (
             <div
-              className={`${surfaceClass(darkMode)} p-10 text-center text-sm ${
-                darkMode ? "text-slate-400" : "text-slate-500"
-              }`}
+              className={`${surfaceClass(darkMode)} px-6 py-10 text-center ${muted}`}
             >
-              商品が見つかりませんでした
+              <Package size={28} className="mx-auto mb-3 opacity-60" />
+              <p className="text-sm">「{keyword.trim()}」に合う商品が見つかりませんでした</p>
+              <button
+                type="button"
+                onClick={() => setSearchTab("image")}
+                className={`mt-4 ${tonalButton(darkMode)}`}
+              >
+                <Camera size={18} />
+                写真で探してみる
+              </button>
             </div>
           )}
         </section>

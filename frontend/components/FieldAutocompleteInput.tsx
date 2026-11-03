@@ -142,20 +142,20 @@ export function FieldAutocompleteInput({
   }
 
   const dropdownClass = darkMode
-    ? "absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-xl border border-slate-700 bg-slate-900 py-1 shadow-lg"
-    : "absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg";
+    ? "absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-2xl bg-ink-900 py-1 shadow-lg"
+    : "absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-xl border border-ink-200 bg-white py-1 shadow-lg";
 
   const optionClass = (active: boolean) =>
     darkMode
       ? `flex w-full px-4 py-2.5 text-left text-sm ${
           active
-            ? "bg-blue-600 text-white"
-            : "text-slate-200 hover:bg-slate-800"
+            ? "bg-brand-600 text-white"
+            : "text-ink-200 hover:bg-ink-800"
         }`
       : `flex w-full px-4 py-2.5 text-left text-sm ${
           active
-            ? "bg-blue-600 text-white"
-            : "text-slate-700 hover:bg-slate-50"
+            ? "bg-brand-600 text-white"
+            : "text-ink-700 hover:bg-ink-50"
         }`;
 
   return (
@@ -189,8 +189,8 @@ export function FieldAutocompleteInput({
             <li
               className={
                 darkMode
-                  ? "px-4 py-2.5 text-sm text-slate-400"
-                  : "px-4 py-2.5 text-sm text-slate-500"
+                  ? "px-4 py-2.5 text-sm text-ink-400"
+                  : "px-4 py-2.5 text-sm text-ink-500"
               }
             >
               候補を読み込み中...

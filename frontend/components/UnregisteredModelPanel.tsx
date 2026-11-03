@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExternalLink, PackagePlus } from "lucide-react";
 import { surfaceClass } from "@/components/AppShell";
+import { primaryButton, secondaryButton } from "@/components/ui";
 import { buildManualSearchLinks } from "@/lib/manualLinks";
 
 type UnregisteredModelPanelProps = {
@@ -18,41 +19,25 @@ export function UnregisteredModelPanel({
   const links = buildManualSearchLinks(maker, modelNumber);
   const registerHref = `/register?model_number=${encodeURIComponent(modelNumber)}`;
 
-  const secondaryButton = darkMode
-    ? "inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
-    : "inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50";
-
   return (
     <section className={`${surfaceClass(darkMode)} space-y-4 p-5`}>
       <div>
-        <h2
-          className={
-            darkMode
-              ? "text-base font-bold text-white"
-              : "text-base font-bold text-slate-900"
-          }
-        >
-          登録されていない商品かもしれません
-        </h2>
+        <h2 className="text-lg font-bold">登録されていない商品かもしれません</h2>
         <p
-          className={
-            darkMode
-              ? "mt-1 text-sm text-slate-400"
-              : "mt-1 text-sm text-slate-600"
-          }
+          className={`mt-1.5 text-sm leading-relaxed ${
+            darkMode ? "text-ink-400" : "text-ink-600"
+          }`}
         >
-          読み取った型番:{" "}
+          読み取った型番：
           <span className="font-mono font-semibold">{modelNumber}</span>
           {maker && `（${maker}）`}
-          。読み間違いがないか、実物のラベルと見比べてください。
+          <br />
+          読み間違いがないか、実物のラベルと見比べてください。
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href={registerHref}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700"
-        >
+      <div className="grid gap-2.5 sm:flex sm:flex-wrap">
+        <Link href={registerHref} className={primaryButton}>
           <PackagePlus size={18} />
           この型番で登録する
         </Link>
@@ -62,7 +47,7 @@ export function UnregisteredModelPanel({
             href={link.url}
             target="_blank"
             rel="noreferrer noopener"
-            className={secondaryButton}
+            className={secondaryButton(darkMode)}
           >
             <ExternalLink size={16} />
             {link.label}

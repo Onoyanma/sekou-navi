@@ -18,6 +18,7 @@ import { AppShell, surfaceClass, useTheme } from "@/components/AppShell";
 import { FieldAutocompleteInput } from "@/components/FieldAutocompleteInput";
 import { saveFieldHistory } from "@/lib/fieldSuggestions";
 import { apiUrl, productImageUrl } from "@/lib/api";
+import { dangerButton, fieldClass, primaryButton } from "@/components/ui";
 
 type Product = {
   id: number;
@@ -68,7 +69,7 @@ export default function ProductDetailPage() {
   return (
     <AppShell
       title="商品詳細"
-      description="商品情報の確認・編集ができます"
+      back
     >
       <ProductDetailContent />
     </AppShell>
@@ -104,21 +105,19 @@ function ProductDetailContent() {
   const [officialUrl, setOfficialUrl] = useState("");
   const [loadError, setLoadError] = useState("");
 
-  const inputClass = darkMode
-    ? "mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
-    : "mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500";
+  const inputClass = `${fieldClass(darkMode)} mt-1.5`;
 
   const labelClass = darkMode
-    ? "text-sm font-semibold text-slate-300"
-    : "text-sm font-semibold text-slate-600";
+    ? "text-sm font-semibold text-ink-300"
+    : "text-sm font-semibold text-ink-600";
 
   const sectionTitleClass = darkMode
     ? "flex items-center gap-2 text-lg font-bold text-white"
-    : "flex items-center gap-2 text-lg font-bold text-slate-900";
+    : "flex items-center gap-2 text-lg font-bold text-ink-900";
 
   const dividerClass = darkMode
-    ? "border-t border-slate-800"
-    : "border-t border-slate-200";
+    ? "border-t border-ink-800"
+    : "border-t border-ink-200";
 
   const loadProduct = useCallback(async () => {
     setLoadError("");
@@ -368,12 +367,12 @@ function ProductDetailContent() {
   }
 
   const addImageButtonClass = darkMode
-    ? "flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950 text-slate-400 hover:border-emerald-500 hover:text-emerald-400 disabled:opacity-50"
-    : "flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-500 hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-50";
+    ? "flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-ink-700 bg-ink-950 text-ink-400 hover:border-brand-500 hover:text-brand-400 disabled:opacity-50"
+    : "flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 hover:border-brand-500 hover:text-brand-600 disabled:opacity-50";
 
   const imageThumbClass = darkMode
-    ? "w-28 shrink-0 rounded-2xl border border-slate-800 bg-slate-950 p-2"
-    : "w-28 shrink-0 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm";
+    ? "w-28 shrink-0 rounded-2xl border border-ink-800 bg-ink-950 p-2"
+    : "w-28 shrink-0 rounded-2xl border border-ink-200 bg-white p-2 shadow-sm";
 
   if (loadError) {
     return (
@@ -384,7 +383,7 @@ function ProductDetailContent() {
         <button
           type="button"
           onClick={() => router.push("/search")}
-          className="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+          className={`${primaryButton}`}
         >
           商品検索に戻る
         </button>
@@ -413,7 +412,7 @@ function ProductDetailContent() {
             <button
               type="button"
               onClick={startEditing}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+              className={`${primaryButton}`}
             >
               <Pencil size={16} />
               編集する
@@ -424,7 +423,7 @@ function ProductDetailContent() {
                 type="button"
                 onClick={saveProduct}
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className={`${primaryButton}`}
               >
                 {saving ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -439,8 +438,8 @@ function ProductDetailContent() {
                 disabled={saving}
                 className={
                   darkMode
-                    ? "inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-800"
-                    : "inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    ? "inline-flex items-center gap-2 rounded-xl border border-ink-700 px-4 py-2.5 text-sm font-semibold text-ink-200 hover:bg-ink-800"
+                    : "inline-flex items-center gap-2 rounded-xl border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 hover:bg-ink-50"
                 }
               >
                 <X size={16} />
@@ -455,8 +454,8 @@ function ProductDetailContent() {
         <p
           className={
             darkMode
-              ? "rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-200"
-              : "rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+              ? "rounded-2xl bg-ink-800 px-4 py-3 text-sm text-ink-200"
+              : "rounded-2xl bg-ink-50 px-4 py-3 text-sm text-ink-700"
           }
         >
           {message}
@@ -468,7 +467,7 @@ function ProductDetailContent() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,300px)_1fr]">
             <section>
               <h2 className={sectionTitleClass}>
-                <Images size={20} className="text-emerald-600" />
+                <Images size={20} className="text-brand-600" />
                 商品画像
               </h2>
 
@@ -485,8 +484,8 @@ function ProductDetailContent() {
                         <p
                           className={
                             darkMode
-                              ? "mt-1.5 truncate text-center text-xs text-slate-500"
-                              : "mt-1.5 truncate text-center text-xs text-slate-500"
+                              ? "mt-1.5 truncate text-center text-xs text-ink-500"
+                              : "mt-1.5 truncate text-center text-xs text-ink-500"
                           }
                         >
                           {image.image_type}
@@ -499,8 +498,8 @@ function ProductDetailContent() {
                 <div
                   className={
                     darkMode
-                      ? "mt-4 flex aspect-square max-w-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-950 text-slate-500"
-                      : "mt-4 flex aspect-square max-w-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-slate-400"
+                      ? "mt-4 flex aspect-square max-w-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-ink-700 bg-ink-950 text-ink-500"
+                      : "mt-4 flex aspect-square max-w-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-ink-300 bg-ink-50 text-ink-400"
                   }
                 >
                   <ImageIcon size={32} className="opacity-50" />
@@ -514,13 +513,13 @@ function ProductDetailContent() {
                 <span
                   className={
                     darkMode
-                      ? "rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200"
-                      : "rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                      ? "rounded-full bg-ink-800 px-3 py-1 text-sm text-ink-200"
+                      : "rounded-full bg-ink-100 px-3 py-1 text-sm text-ink-700"
                   }
                 >
                   {product.maker}
                 </span>
-                <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+                <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-700">
                   {product.category}
                 </span>
               </div>
@@ -529,7 +528,7 @@ function ProductDetailContent() {
                 className={
                   darkMode
                     ? "mt-4 text-2xl font-bold text-white md:text-3xl"
-                    : "mt-4 text-2xl font-bold text-slate-900 md:text-3xl"
+                    : "mt-4 text-2xl font-bold text-ink-900 md:text-3xl"
                 }
               >
                 {product.product_name}
@@ -538,8 +537,8 @@ function ProductDetailContent() {
               <p
                 className={
                   darkMode
-                    ? "mt-2 font-mono text-lg text-slate-300"
-                    : "mt-2 font-mono text-lg text-slate-600"
+                    ? "mt-2 font-mono text-lg text-ink-300"
+                    : "mt-2 font-mono text-lg text-ink-600"
                 }
               >
                 {product.model_number}
@@ -549,8 +548,8 @@ function ProductDetailContent() {
                 <p
                   className={
                     darkMode
-                      ? "mt-6 rounded-xl bg-slate-800 p-4 text-slate-300"
-                      : "mt-6 rounded-xl bg-slate-50 p-4 text-slate-700"
+                      ? "mt-6 rounded-2xl bg-ink-800 p-4 text-ink-300"
+                      : "mt-6 rounded-2xl bg-ink-50 p-4 text-ink-700"
                   }
                 >
                   {product.memo}
@@ -561,8 +560,8 @@ function ProductDetailContent() {
                 <p
                   className={
                     darkMode
-                      ? "mt-4 text-sm text-slate-400"
-                      : "mt-4 text-sm text-slate-500"
+                      ? "mt-4 text-sm text-ink-400"
+                      : "mt-4 text-sm text-ink-500"
                   }
                 >
                   {product.tags}
@@ -575,7 +574,7 @@ function ProductDetailContent() {
                     href={product.manual_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                    className={`${primaryButton}`}
                   >
                     <FileText size={16} />
                     取扱説明書
@@ -589,8 +588,8 @@ function ProductDetailContent() {
                     rel="noreferrer"
                     className={
                       darkMode
-                        ? "inline-flex items-center gap-2 rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
-                        : "inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        ? "inline-flex items-center gap-2 rounded-xl border border-ink-700 px-5 py-3 text-sm font-semibold text-ink-200 hover:bg-ink-800"
+                        : "inline-flex items-center gap-2 rounded-xl border border-ink-200 px-5 py-3 text-sm font-semibold text-ink-700 hover:bg-ink-50"
                     }
                   >
                     <ExternalLink size={16} />
@@ -603,7 +602,7 @@ function ProductDetailContent() {
                     href={product.official_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                    className={`${primaryButton}`}
                   >
                     <ExternalLink size={16} />
                     公式ページ
@@ -616,14 +615,14 @@ function ProductDetailContent() {
           <div className="space-y-8">
             <section>
               <h2 className={sectionTitleClass}>
-                <Images size={20} className="text-emerald-600" />
+                <Images size={20} className="text-brand-600" />
                 商品画像
               </h2>
               <p
                 className={
                   darkMode
-                    ? "mt-2 text-sm text-slate-400"
-                    : "mt-2 text-sm text-slate-500"
+                    ? "mt-2 text-sm text-ink-400"
+                    : "mt-2 text-sm text-ink-500"
                 }
               >
                 写真を追加・削除できます。変更は「保存する」で反映されます
@@ -678,7 +677,7 @@ function ProductDetailContent() {
                       )}
                     </div>
                     {image.image_type && image.image_type !== "その他" && (
-                      <p className="mt-2 truncate text-center text-xs text-slate-500">
+                      <p className="mt-2 truncate text-center text-xs text-ink-500">
                         {image.image_type}
                       </p>
                     )}
@@ -693,7 +692,7 @@ function ProductDetailContent() {
                         alt={image.file.name}
                         className="h-28 w-full rounded-xl object-cover"
                       />
-                      <span className="absolute bottom-1 left-1 rounded-md bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      <span className="absolute bottom-1 left-1 rounded-md bg-brand-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                         新規
                       </span>
                       <button
@@ -715,8 +714,8 @@ function ProductDetailContent() {
                 <p
                   className={
                     darkMode
-                      ? "mt-3 text-sm text-slate-400"
-                      : "mt-3 text-sm text-slate-500"
+                      ? "mt-3 text-sm text-ink-400"
+                      : "mt-3 text-sm text-ink-500"
                   }
                 >
                   「追加」から写真を選んでください
@@ -727,8 +726,8 @@ function ProductDetailContent() {
                 <p
                   className={
                     darkMode
-                      ? "mt-3 text-sm text-emerald-400"
-                      : "mt-3 text-sm text-emerald-600"
+                      ? "mt-3 text-sm text-brand-400"
+                      : "mt-3 text-sm text-brand-600"
                   }
                 >
                   {pendingImages.length > 0 &&
@@ -744,7 +743,7 @@ function ProductDetailContent() {
 
             <section>
               <h2 className={sectionTitleClass}>
-                <ClipboardList size={20} className="text-blue-600" />
+                <ClipboardList size={20} className="text-brand-600" />
                 商品情報
               </h2>
 
@@ -860,8 +859,8 @@ function ProductDetailContent() {
               <p
                 className={
                   darkMode
-                    ? "mt-2 text-sm text-slate-400"
-                    : "mt-2 text-sm text-slate-500"
+                    ? "mt-2 text-sm text-ink-400"
+                    : "mt-2 text-sm text-ink-500"
                 }
               >
                 商品と登録画像をすべて削除します
@@ -870,7 +869,7 @@ function ProductDetailContent() {
                 type="button"
                 onClick={deleteProduct}
                 disabled={saving || deleting}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                className={`${dangerButton} mt-4`}
               >
                 {deleting ? (
                   <Loader2 size={16} className="animate-spin" />

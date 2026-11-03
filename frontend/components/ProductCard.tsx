@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ExternalLink, Tag } from "lucide-react";
+import { ChevronRight, ExternalLink, Package } from "lucide-react";
+import { surfaceClass } from "@/components/AppShell";
 import { buildManualSearchLinks } from "@/lib/manualLinks";
 
 type ProductCardProduct = {
@@ -15,20 +16,35 @@ type ProductCardProduct = {
 };
 
 const SOURCE_LABELS: Record<string, string> = {
-  image: "画像類似",
-  model: "型番一致",
-  maker: "メーカー一致",
-  name: "商品名一致",
-  keyword: "キーワード一致",
+  image: "画像が似ている",
+  model: "型番が一致",
+  maker: "メーカーが一致",
+  name: "商品名が一致",
+  keyword: "キーワードが一致",
   semantic: "意味が近い",
 };
 
 export type MatchConfidence = "high" | "medium" | "low";
 
-const CONFIDENCE_BADGES: Record<MatchConfidence, { label: string; className: string }> = {
-  high: { label: "確度 高", className: "bg-emerald-600 text-white" },
-  medium: { label: "確度 中（型番を確認）", className: "bg-amber-500 text-white" },
-  low: { label: "確度 低（参考）", className: "bg-slate-500 text-white" },
+const CONFIDENCE_BADGES: Record<
+  MatchConfidence,
+  { label: string; light: string; dark: string }
+> = {
+  high: {
+    label: "確度 高",
+    light: "bg-brand-600 text-white",
+    dark: "bg-brand-500 text-brand-950",
+  },
+  medium: {
+    label: "確度 中・型番を確認",
+    light: "bg-amber-100 text-amber-800",
+    dark: "bg-amber-900/60 text-amber-200",
+  },
+  low: {
+    label: "確度 低・参考",
+    light: "bg-ink-100 text-ink-600",
+    dark: "bg-ink-800 text-ink-300",
+  },
 };
 
 type ProductCardProps = {
@@ -57,188 +73,154 @@ export function ProductCard({
     product.maker,
     product.model_number
   )[0];
+  const manualUrl = product.install_url || manualSearchLink?.url || "";
+  const manualLabel = product.install_url ? "施工説明書" : "説明書を検索";
+
+  const muted = darkMode ? "text-ink-400" : "text-ink-500";
+  const hasEvidence =
+    (sources && sources.length > 0) ||
+    ocrCandidate ||
+    (similarity !== undefined && similarity > 0) ||
+    (combinedScore !== undefined && combinedScore > 0);
 
   return (
-    <article
-      className={
-        darkMode
-          ? "overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm transition hover:border-slate-700"
-          : "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md"
-      }
-    >
-      <div className="flex flex-col sm:flex-row">
-        {imagePath && (
-          <div
-            className={
-              darkMode
-                ? "shrink-0 border-b border-slate-800 bg-slate-950 sm:w-44 sm:border-b-0 sm:border-r"
-                : "shrink-0 border-b border-slate-100 bg-slate-50 sm:w-44 sm:border-b-0 sm:border-r"
-            }
-          >
+    <article className={`${surfaceClass(darkMode)} relative overflow-hidden p-3 sm:p-4`}>
+      <div className="flex gap-3.5">
+        <div
+          className={`flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl sm:h-24 sm:w-24 ${
+            darkMode ? "bg-ink-800 text-ink-500" : "bg-ink-100 text-ink-300"
+          }`}
+        >
+          {imagePath ? (
             <img
               src={imageUrl(imagePath)}
-              alt={product.product_name}
+              alt=""
               loading="lazy"
               decoding="async"
-              className="h-44 w-full object-cover sm:h-full sm:min-h-[11rem]"
+              className="h-full w-full object-cover"
             />
-          </div>
-        )}
+          ) : (
+            <Package size={28} />
+          )}
+        </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4 p-5">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              {confidence && (
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-bold ${CONFIDENCE_BADGES[confidence].className}`}
-                >
-                  {CONFIDENCE_BADGES[confidence].label}
-                </span>
-              )}
-              <span
-                className={
-                  darkMode
-                    ? "inline-flex items-center gap-1 rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-200"
-                    : "inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
-                }
-              >
-                <Tag size={12} />
-                {product.maker || "未登録"}
-              </span>
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
-                {product.category}
-              </span>
-              {sources?.map((source) => (
-                <span
-                  key={source}
-                  className={
-                    source === "image"
-                      ? "rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
-                      : source === "model" || source === "keyword"
-                        ? "rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700"
-                        : source === "maker"
-                          ? "rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700"
-                          : source === "semantic"
-                            ? "rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-semibold text-fuchsia-700"
-                            : "rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700"
-                  }
-                >
-                  {SOURCE_LABELS[source] || source}
-                </span>
-              ))}
-              {similarity !== undefined && similarity > 0 && (
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  画像 {similarity.toFixed(2)}
-                </span>
-              )}
-              {combinedScore !== undefined && combinedScore > 0 && (
-                <span
-                  className={
-                    darkMode
-                      ? "rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300"
-                      : "rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600"
-                  }
-                >
-                  スコア {combinedScore.toFixed(0)}
-                </span>
-              )}
-            </div>
-
-            {ocrCandidate && (
-              <p
-                className={
-                  darkMode
-                    ? "mt-2 text-xs text-blue-400"
-                    : "mt-2 text-xs text-blue-600"
-                }
-              >
-                読み取り型番: {ocrCandidate}
-              </p>
-            )}
-
-            <h2
-              className={
+        <div className="min-w-0 flex-1">
+          {confidence && (
+            <span
+              className={`mb-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${
                 darkMode
-                  ? "mt-3 text-xl font-bold text-white"
-                  : "mt-3 text-xl font-bold text-slate-900"
-              }
+                  ? CONFIDENCE_BADGES[confidence].dark
+                  : CONFIDENCE_BADGES[confidence].light
+              }`}
             >
-              {product.product_name}
-            </h2>
-            <p
-              className={
-                darkMode
-                  ? "mt-1 font-mono text-sm text-slate-300"
-                  : "mt-1 font-mono text-sm text-slate-600"
-              }
-            >
-              {product.model_number}
-            </p>
-            {product.memo && (
-              <p
-                className={
-                  darkMode
-                    ? "mt-3 line-clamp-2 text-sm text-slate-400"
-                    : "mt-3 line-clamp-2 text-sm text-slate-600"
-                }
-              >
-                {product.memo}
-              </p>
-            )}
-            {product.tags && (
-              <p
-                className={
-                  darkMode
-                    ? "mt-2 text-xs text-slate-500"
-                    : "mt-2 text-xs text-slate-500"
-                }
-              >
-                {product.tags}
-              </p>
-            )}
-          </div>
+              {CONFIDENCE_BADGES[confidence].label}
+            </span>
+          )}
 
-          <div className="flex flex-wrap gap-2">
+          <p className={`truncate text-xs ${muted}`}>
+            {[product.maker, product.category].filter(Boolean).join(" ・ ") ||
+              "未分類"}
+          </p>
+          <h2 className="mt-0.5 line-clamp-2 text-[17px] font-bold leading-snug">
             <Link
               href={`/products/${product.id}`}
-              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+              className="after:absolute after:inset-0 after:content-['']"
             >
-              詳細を見る
+              {product.product_name}
             </Link>
-            {product.install_url ? (
-              <a
-                href={product.install_url}
-                target="_blank"
-                rel="noreferrer"
-                className={
-                  darkMode
-                    ? "inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-800"
-                    : "inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                }
-              >
-                <ExternalLink size={16} />
-                施工説明書
-              </a>
-            ) : (
-              manualSearchLink && (
-                <a
-                  href={manualSearchLink.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={
-                    darkMode
-                      ? "inline-flex items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800"
-                      : "inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                  }
-                >
-                  <ExternalLink size={16} />
-                  説明書を検索
-                </a>
-              )
-            )}
-          </div>
+          </h2>
+          <p
+            className={`mt-0.5 truncate font-mono text-sm ${
+              darkMode ? "text-ink-300" : "text-ink-600"
+            }`}
+          >
+            {product.model_number}
+          </p>
         </div>
+
+        <ChevronRight
+          size={20}
+          className={`mt-1 hidden shrink-0 sm:block ${
+            darkMode ? "text-ink-600" : "text-ink-300"
+          }`}
+        />
       </div>
+
+      {product.memo && (
+        <p className={`mt-3 line-clamp-2 text-sm leading-relaxed ${muted}`}>
+          {product.memo}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {manualUrl && (
+          <a
+            href={manualUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className={`relative z-10 inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition ${
+              product.install_url
+                ? darkMode
+                  ? "bg-brand-950 text-brand-300 hover:bg-brand-900"
+                  : "bg-brand-50 text-brand-700 hover:bg-brand-100"
+                : darkMode
+                  ? "bg-ink-800 text-ink-300 hover:bg-ink-700"
+                  : "bg-ink-100 text-ink-600 hover:bg-ink-200"
+            }`}
+          >
+            <ExternalLink size={15} />
+            {manualLabel}
+          </a>
+        )}
+        {product.tags &&
+          product.tags
+            .split(",")
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((tag) => (
+              <span
+                key={tag}
+                className={`rounded-full px-2.5 py-1 text-xs ${
+                  darkMode ? "bg-ink-800 text-ink-400" : "bg-ink-50 text-ink-500"
+                }`}
+              >
+                {tag}
+              </span>
+            ))}
+      </div>
+
+      {hasEvidence && (
+        <details className="relative z-10 mt-3 group">
+          <summary
+            className={`flex min-h-8 cursor-pointer list-none items-center gap-1 text-xs font-medium ${muted}`}
+          >
+            <ChevronRight
+              size={14}
+              className="transition group-open:rotate-90"
+            />
+            判定の根拠
+          </summary>
+          <div className={`mt-2 space-y-1.5 text-xs ${muted}`}>
+            {ocrCandidate && (
+              <p>
+                読み取った型番:{" "}
+                <span className="font-mono font-semibold">{ocrCandidate}</span>
+              </p>
+            )}
+            {sources && sources.length > 0 && (
+              <p>{sources.map((s) => SOURCE_LABELS[s] || s).join(" ・ ")}</p>
+            )}
+            <p>
+              {similarity !== undefined && similarity > 0 && (
+                <>画像の類似度 {similarity.toFixed(2)}　</>
+              )}
+              {combinedScore !== undefined && combinedScore > 0 && (
+                <>総合スコア {combinedScore.toFixed(0)}</>
+              )}
+            </p>
+          </div>
+        </details>
+      )}
     </article>
   );
 }

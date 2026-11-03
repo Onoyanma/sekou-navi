@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  ChevronDown,
   ClipboardList,
   Image as ImageIcon,
   Images,
   Loader2,
   PackagePlus,
+  ScanLine,
   Sparkles,
   X,
 } from "lucide-react";
@@ -26,6 +28,7 @@ import {
   searchByBarcode,
 } from "@/lib/barcode";
 import { apiUrl, productImageUrl } from "@/lib/api";
+import { fieldClass, primaryButton } from "@/components/ui";
 
 type OcrCandidate = {
   model_number: string;
@@ -148,7 +151,7 @@ export default function RegisterPage() {
   return (
     <AppShell
       title="商品登録"
-      description="型番・URL・画像・QRから商品情報をAIで自動入力できます"
+      description="写真や型番から、商品情報を自動で入力できます"
     >
       <RegisterContent />
     </AppShell>
@@ -159,17 +162,15 @@ function RegisterContent() {
   const { darkMode } = useTheme();
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const inputClass = darkMode
-    ? "w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-    : "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
+  const inputClass = `${fieldClass(darkMode)}`;
 
   const labelClass = darkMode
-    ? "text-sm font-semibold text-slate-300"
-    : "text-sm font-semibold text-slate-600";
+    ? "text-sm font-semibold text-ink-300"
+    : "text-sm font-semibold text-ink-600";
 
   const sectionTitleClass = darkMode
     ? "flex items-center gap-2 text-lg font-bold text-white"
-    : "flex items-center gap-2 text-lg font-bold text-slate-900";
+    : "flex items-center gap-2 text-lg font-bold text-ink-900";
 
   const [images, setImages] = useState<SelectedImage[]>([]);
   const [maker, setMaker] = useState("");
@@ -683,12 +684,12 @@ function RegisterContent() {
   }
 
   const addImageButtonClass = darkMode
-    ? "flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-950 text-slate-400 hover:border-emerald-500 hover:text-emerald-400 disabled:opacity-50"
-    : "flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-500 hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-50";
+    ? "flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-ink-700 bg-ink-950 text-ink-400 hover:border-brand-500 hover:text-brand-400 disabled:opacity-50"
+    : "flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 hover:border-brand-500 hover:text-brand-600 disabled:opacity-50";
 
   const resultCardClass = darkMode
-    ? "rounded-xl border border-slate-800 bg-slate-950 p-4"
-    : "rounded-xl border border-slate-200 bg-slate-50 p-4";
+    ? "rounded-2xl bg-ink-950 p-4"
+    : "rounded-2xl bg-ink-50 p-4";
 
   const unifiedCandidates = mergeProductCandidates(
     matchedProducts,
@@ -697,22 +698,51 @@ function RegisterContent() {
 
   return (
     <div className="space-y-6">
-      <LazyBarcodeScanner
-        onScan={(code) => void handleBarcodeScan(code)}
-        disabled={loading}
-        hint="QR・バーコードから型番を読み取り、フォームへ自動入力します。登録済み商品があれば候補として表示します"
-      />
+      <details className={`${surfaceClass(darkMode)} group p-4`}>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3">
+          <span className="flex items-center gap-3">
+            <span
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                darkMode ? "bg-brand-950 text-brand-300" : "bg-brand-50 text-brand-600"
+              }`}
+            >
+              <ScanLine size={20} />
+            </span>
+            <span>
+              <span className="block text-[15px] font-bold">
+                QR・バーコードから入力
+              </span>
+              <span
+                className={`block text-xs ${darkMode ? "text-ink-400" : "text-ink-500"}`}
+              >
+                読み取った型番を、下のフォームに入れます
+              </span>
+            </span>
+          </span>
+          <ChevronDown
+            size={18}
+            className="shrink-0 transition group-open:rotate-180"
+          />
+        </summary>
+        <div className="mt-4">
+          <LazyBarcodeScanner
+            onScan={(code) => void handleBarcodeScan(code)}
+            disabled={loading}
+            hint="登録済みの商品があれば、候補として表示します。"
+          />
+        </div>
+      </details>
 
       <div className={`${surfaceClass(darkMode)} p-5 md:p-6`}>
         <h2 className={sectionTitleClass}>
-          <Images size={20} className="text-emerald-600" />
+          <Images size={20} className="text-brand-600" />
           商品画像
         </h2>
         <p
           className={
             darkMode
-              ? "mt-2 text-sm text-slate-400"
-              : "mt-2 text-sm text-slate-500"
+              ? "mt-2 text-sm text-ink-400"
+              : "mt-2 text-sm text-ink-500"
           }
         >
           複数枚追加できます。型番ラベルの写真があるとAIの読み取り精度が上がります
@@ -754,8 +784,8 @@ function RegisterContent() {
               key={image.id}
               className={
                 darkMode
-                  ? "w-28 shrink-0 rounded-2xl border border-slate-800 bg-slate-950 p-2"
-                  : "w-28 shrink-0 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"
+                  ? "w-28 shrink-0 rounded-2xl border border-ink-800 bg-ink-950 p-2"
+                  : "w-28 shrink-0 rounded-2xl border border-ink-200 bg-white p-2 shadow-sm"
               }
             >
               <div className="relative">
@@ -781,8 +811,8 @@ function RegisterContent() {
                 onChange={(e) => updateImageType(image.id, e.target.value)}
                 className={
                   darkMode
-                    ? "mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-white"
-                    : "mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                    ? "mt-2 w-full rounded-lg border border-ink-700 bg-ink-900 px-2 py-1.5 text-xs text-white"
+                    : "mt-2 w-full rounded-lg border border-ink-200 px-2 py-1.5 text-xs"
                 }
               >
                 <option>全体写真</option>
@@ -798,7 +828,7 @@ function RegisterContent() {
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <p
               className={
-                darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"
+                darkMode ? "text-sm text-ink-400" : "text-sm text-ink-500"
               }
             >
               {images.length}枚の画像を選択中
@@ -823,7 +853,7 @@ function RegisterContent() {
           type="button"
           onClick={analyzeImage}
           disabled={loading || images.length === 0}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400 sm:w-auto"
+          className={`${primaryButton} mt-5 w-full sm:w-auto`}
         >
           <Sparkles size={18} />
           {loading ? "AI解析中..." : "AIで読み取る"}
@@ -835,7 +865,7 @@ function RegisterContent() {
         texts.length > 0) && (
         <div className={`${surfaceClass(darkMode)} p-5 md:p-6`}>
           <h2 className={sectionTitleClass}>
-            <Sparkles size={20} className="text-violet-600" />
+            <Sparkles size={20} className="text-brand-600" />
             AI解析結果
           </h2>
 
@@ -854,16 +884,16 @@ function RegisterContent() {
                       }}
                       className={
                         darkMode
-                          ? "rounded-xl border border-slate-700 bg-slate-900 p-3 text-left hover:border-blue-500"
-                          : "rounded-xl border border-slate-200 bg-white p-3 text-left hover:border-blue-400 hover:bg-blue-50"
+                          ? "rounded-2xl bg-ink-900 p-3 text-left hover:border-brand-500"
+                          : "rounded-xl border border-ink-200 bg-white p-3 text-left hover:border-brand-400 hover:bg-brand-50"
                       }
                     >
                       <span className="font-bold">{candidate.model_number}</span>
                       <span
                         className={
                           darkMode
-                            ? "ml-2 text-sm text-slate-400"
-                            : "ml-2 text-sm text-slate-500"
+                            ? "ml-2 text-sm text-ink-400"
+                            : "ml-2 text-sm text-ink-500"
                         }
                       >
                         スコア {candidate.score}
@@ -881,8 +911,8 @@ function RegisterContent() {
                   <span
                     className={
                       darkMode
-                        ? "rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-300"
-                        : "rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600"
+                        ? "rounded-full bg-ink-800 px-2.5 py-0.5 text-xs font-medium text-ink-300"
+                        : "rounded-full bg-ink-200 px-2.5 py-0.5 text-xs font-medium text-ink-600"
                     }
                   >
                     {unifiedCandidates.length}件
@@ -892,8 +922,8 @@ function RegisterContent() {
               <p
                 className={
                   darkMode
-                    ? "mt-1 text-xs text-slate-500"
-                    : "mt-1 text-xs text-slate-500"
+                    ? "mt-1 text-xs text-ink-500"
+                    : "mt-1 text-xs text-ink-500"
                 }
               >
                 型番一致と画像類似の結果をまとめて表示しています
@@ -906,8 +936,8 @@ function RegisterContent() {
                       key={item.product.id}
                       className={
                         darkMode
-                          ? "flex gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4"
-                          : "flex gap-4 rounded-xl border border-slate-200 bg-white p-4"
+                          ? "flex gap-4 rounded-2xl bg-ink-900 p-4"
+                          : "flex gap-4 rounded-xl border border-ink-200 bg-white p-4"
                       }
                     >
                       {item.product.image_path && (
@@ -923,18 +953,18 @@ function RegisterContent() {
                         <div className="flex flex-wrap gap-2">
                           {item.sources.includes("ocr") &&
                           item.sources.includes("image") ? (
-                            <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
+                            <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
                               型番・画像ともに一致
                             </span>
                           ) : (
                             <>
                               {item.sources.includes("ocr") && (
-                                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                                <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
                                   型番一致
                                 </span>
                               )}
                               {item.sources.includes("image") && (
-                                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                                <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
                                   画像類似
                                 </span>
                               )}
@@ -943,7 +973,7 @@ function RegisterContent() {
                         </div>
 
                         {item.ocrCandidate && (
-                          <p className="mt-2 text-xs text-blue-600">
+                          <p className="mt-2 text-xs text-brand-600">
                             OCR候補: {item.ocrCandidate}
                           </p>
                         )}
@@ -955,8 +985,8 @@ function RegisterContent() {
                         <p
                           className={
                             darkMode
-                              ? "text-xs text-slate-400"
-                              : "text-xs text-slate-500"
+                              ? "text-xs text-ink-400"
+                              : "text-xs text-ink-500"
                           }
                         >
                           {item.product.maker} / {item.product.category}
@@ -965,17 +995,17 @@ function RegisterContent() {
                         <div
                           className={
                             darkMode
-                              ? "mt-2 flex flex-wrap gap-3 text-sm text-slate-300"
-                              : "mt-2 flex flex-wrap gap-3 text-sm text-slate-600"
+                              ? "mt-2 flex flex-wrap gap-3 text-sm text-ink-300"
+                              : "mt-2 flex flex-wrap gap-3 text-sm text-ink-600"
                           }
                         >
                           {item.matchScore !== undefined && (
-                            <span className="font-semibold text-blue-600">
+                            <span className="font-semibold text-brand-600">
                               型番スコア {item.matchScore.toFixed(1)}
                             </span>
                           )}
                           {item.similarity !== undefined && (
-                            <span className="font-semibold text-emerald-600">
+                            <span className="font-semibold text-brand-600">
                               画像類似度 {item.similarity.toFixed(2)}
                             </span>
                           )}
@@ -993,8 +1023,8 @@ function RegisterContent() {
                           }}
                           className={
                             darkMode
-                              ? "mt-3 text-sm font-medium text-blue-400 hover:text-blue-300"
-                              : "mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
+                              ? "mt-3 text-sm font-medium text-brand-400 hover:text-brand-300"
+                              : "mt-3 text-sm font-medium text-brand-600 hover:text-brand-700"
                           }
                         >
                           この商品情報をフォームに反映
@@ -1007,8 +1037,8 @@ function RegisterContent() {
                 <p
                   className={
                     darkMode
-                      ? "mt-3 text-sm text-slate-400"
-                      : "mt-3 text-sm text-slate-500"
+                      ? "mt-3 text-sm text-ink-400"
+                      : "mt-3 text-sm text-ink-500"
                   }
                 >
                   一致する登録済み商品はありません
@@ -1021,15 +1051,15 @@ function RegisterContent() {
 
       <div className={`${surfaceClass(darkMode)} p-5 md:p-6`}>
         <h2 className={sectionTitleClass}>
-          <ClipboardList size={20} className="text-blue-600" />
+          <ClipboardList size={20} className="text-brand-600" />
           商品情報
         </h2>
 
         <div
           className={
             darkMode
-              ? "mt-5 rounded-xl border border-violet-900/60 bg-slate-950 p-4"
-              : "mt-5 rounded-xl border border-violet-200 bg-violet-50/50 p-4"
+              ? "mt-5 rounded-2xl bg-ink-950 p-4"
+              : "mt-5 rounded-2xl bg-brand-50/50 p-4"
           }
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1037,8 +1067,8 @@ function RegisterContent() {
               <p
                 className={
                   darkMode
-                    ? "flex items-center gap-2 text-sm font-semibold text-violet-300"
-                    : "flex items-center gap-2 text-sm font-semibold text-violet-800"
+                    ? "flex items-center gap-2 text-sm font-semibold text-brand-300"
+                    : "flex items-center gap-2 text-sm font-semibold text-brand-800"
                 }
               >
                 <Sparkles size={16} />
@@ -1047,8 +1077,8 @@ function RegisterContent() {
               <p
                 className={
                   darkMode
-                    ? "mt-1 text-xs text-slate-400"
-                    : "mt-1 text-xs text-slate-600"
+                    ? "mt-1 text-xs text-ink-400"
+                    : "mt-1 text-xs text-ink-600"
                 }
               >
                 型番またはメーカー公式ページのURLを入力すると、商品名・メーカー・カテゴリなどを推測します
@@ -1058,7 +1088,7 @@ function RegisterContent() {
               type="button"
               onClick={() => void runAutocomplete()}
               disabled={loading || autocompleteLoading}
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:bg-slate-400"
+              className={`${primaryButton}`}
             >
               {autocompleteLoading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -1099,8 +1129,8 @@ function RegisterContent() {
             <div
               className={
                 darkMode
-                  ? "mt-4 rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm"
-                  : "mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm"
+                  ? "mt-4 rounded-2xl bg-ink-900 p-4 text-sm"
+                  : "mt-4 rounded-xl border border-ink-200 bg-white p-4 text-sm"
               }
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -1108,18 +1138,18 @@ function RegisterContent() {
                   className={
                     darkMode
                       ? "font-semibold text-white"
-                      : "font-semibold text-slate-900"
+                      : "font-semibold text-ink-900"
                   }
                 >
                   補完プレビュー
                 </span>
-                <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
+                <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
                   信頼度 {Math.round(autocompletePreview.confidence * 100)}%
                 </span>
                 {autocompletePreview.sources.map((source) => (
                   <span
                     key={source}
-                    className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600"
+                    className="rounded-full bg-ink-100 px-2.5 py-0.5 text-xs text-ink-600"
                   >
                     {AUTOCOMPLETE_SOURCE_LABELS[source] || source}
                   </span>
@@ -1128,28 +1158,28 @@ function RegisterContent() {
 
               <dl className="mt-3 grid gap-2 sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs text-slate-500">メーカー</dt>
+                  <dt className="text-xs text-ink-500">メーカー</dt>
                   <dd>{autocompletePreview.maker || "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-slate-500">商品名</dt>
+                  <dt className="text-xs text-ink-500">商品名</dt>
                   <dd>{autocompletePreview.product_name || "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-slate-500">型番</dt>
+                  <dt className="text-xs text-ink-500">型番</dt>
                   <dd className="font-mono">
                     {autocompletePreview.model_number || "—"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-slate-500">カテゴリ</dt>
+                  <dt className="text-xs text-ink-500">カテゴリ</dt>
                   <dd>{autocompletePreview.category || "—"}</dd>
                 </div>
               </dl>
 
               {autocompletePreview.model_candidates.length > 1 && (
                 <div className="mt-3">
-                  <p className="text-xs text-slate-500">型番候補</p>
+                  <p className="text-xs text-ink-500">型番候補</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {autocompletePreview.model_candidates
                       .slice(0, 5)
@@ -1163,8 +1193,8 @@ function RegisterContent() {
                           }}
                           className={
                             darkMode
-                              ? "rounded-lg border border-slate-700 px-2.5 py-1 text-xs hover:border-violet-500"
-                              : "rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs hover:border-violet-400"
+                              ? "rounded-lg border border-ink-700 px-2.5 py-1 text-xs hover:border-brand-500"
+                              : "rounded-lg border border-ink-200 bg-ink-50 px-2.5 py-1 text-xs hover:border-brand-400"
                           }
                         >
                           {candidate.model_number}
@@ -1175,7 +1205,7 @@ function RegisterContent() {
               )}
 
               {autocompletePreview.matched_product && (
-                <p className="mt-3 text-xs text-blue-600">
+                <p className="mt-3 text-xs text-brand-600">
                   登録済みの類似商品:{" "}
                   {autocompletePreview.matched_product.product_name}（
                   {autocompletePreview.matched_product.model_number}）
@@ -1249,8 +1279,8 @@ function RegisterContent() {
             <p
               className={
                 darkMode
-                  ? "mt-1.5 text-xs text-slate-500"
-                  : "mt-1.5 text-xs text-slate-500"
+                  ? "mt-1.5 text-xs text-ink-500"
+                  : "mt-1.5 text-xs text-ink-500"
               }
             >
               登録・更新時に、カテゴリ・メーカー・型番・商品名などからAIがタグを自動追加します
@@ -1273,7 +1303,7 @@ function RegisterContent() {
           type="button"
           onClick={registerProduct}
           disabled={loading}
-          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400 sm:w-auto"
+          className={`${primaryButton} mt-6 w-full sm:w-auto`}
         >
           <PackagePlus size={18} />
           登録する
@@ -1283,8 +1313,8 @@ function RegisterContent() {
           <p
             className={
               darkMode
-                ? "mt-4 rounded-xl border border-slate-700 bg-slate-800 p-4 text-sm text-slate-200"
-                : "mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+                ? "mt-4 rounded-2xl bg-ink-800 p-4 text-sm text-ink-200"
+                : "mt-4 rounded-2xl bg-ink-50 p-4 text-sm text-ink-700"
             }
           >
             {message}

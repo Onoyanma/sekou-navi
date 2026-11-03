@@ -21,7 +21,7 @@ export default function ScanPage() {
   return (
     <AppShell
       title="スキャン"
-      description="QRコード・バーコードを読み取って商品を検索・登録します"
+      description="QR・バーコードから商品を探します"
     >
       <ScanContent />
     </AppShell>
@@ -109,14 +109,14 @@ function ScanContent() {
       <LazyBarcodeScanner
         onScan={(code) => void handleBarcodeScan(code)}
         disabled={barcodeLoading}
-        hint="型番QR・JANコード・商品URLなどを読み取って登録済み商品を検索します"
+        hint="型番のQR、JANコード、商品ページのURLなどを読み取ります。"
       />
 
       {hasScan && (
         <div className="flex flex-wrap items-center gap-3">
           <p
             className={
-              darkMode ? "text-sm text-slate-400" : "text-sm text-slate-500"
+              darkMode ? "text-sm text-ink-400" : "text-sm text-ink-500"
             }
           >
             読み取り: <span className="font-mono">{lastScannedCode}</span>
@@ -143,7 +143,7 @@ function ScanContent() {
           {barcodeTerms.map((term) => (
             <span
               key={term}
-              className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700"
+              className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700"
             >
               検索語: {term}
             </span>
@@ -155,8 +155,8 @@ function ScanContent() {
         <p
           className={
             darkMode
-              ? "rounded-xl border border-emerald-800 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300"
-              : "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+              ? "rounded-2xl bg-brand-950/50 px-4 py-3 text-sm text-brand-300"
+              : "rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-800"
           }
         >
           {registerNotice}
@@ -167,16 +167,16 @@ function ScanContent() {
         <section className="space-y-4">
           <h2
             className={`flex items-center gap-2 text-lg font-bold ${
-              darkMode ? "text-white" : "text-slate-900"
+              darkMode ? "text-white" : "text-ink-900"
             }`}
           >
-            <Barcode size={20} className="text-violet-600" />
+            <Barcode size={20} className="text-brand-600" />
             コード一致の商品
             <span
               className={
                 darkMode
-                  ? "rounded-full bg-slate-800 px-2.5 py-0.5 text-sm font-medium text-slate-300"
-                  : "rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-600"
+                  ? "rounded-full bg-ink-800 px-2.5 py-0.5 text-sm font-medium text-ink-300"
+                  : "rounded-full bg-ink-100 px-2.5 py-0.5 text-sm font-medium text-ink-600"
               }
             >
               {barcodeResults.length}件

@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
-import { Barcode, Camera, CheckCircle2, ImageIcon, Loader2, ScanLine, X } from "lucide-react";
-import { surfaceClass, useTheme } from "@/components/AppShell";
+import { Camera, CheckCircle2, ImageIcon, Loader2, ScanLine, X } from "lucide-react";
+import { useTheme } from "@/components/AppShell";
+import { fieldClass, primaryButton, secondaryButton } from "@/components/ui";
 
 type BarcodeScannerProps = {
   onScan: (value: string, format?: string) => void;
@@ -204,91 +205,64 @@ export function BarcodeScanner({
     setManualCode("");
   }
 
-  const buttonClass = darkMode
-    ? "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-800 disabled:opacity-50"
-    : "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50";
-
-  const inputClass = darkMode
-    ? "flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
-    : "flex-1 rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500";
+  const inputClass = `${fieldClass(darkMode)} flex-1`;
+  const muted = darkMode ? "text-ink-400" : "text-ink-500";
 
   return (
-    <div className={`${surfaceClass(darkMode)} space-y-4 p-4 md:p-5`}>
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
-          <Barcode size={20} />
-        </div>
-        <div>
-          <p
-            className={
-              darkMode
-                ? "font-semibold text-white"
-                : "font-semibold text-slate-900"
-            }
-          >
-            QR / バーコード読み取り
-          </p>
-          <p
-            className={
-              darkMode ? "mt-1 text-sm text-slate-400" : "mt-1 text-sm text-slate-500"
-            }
-          >
-            {hint}
-          </p>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <p className={`text-sm leading-relaxed ${muted}`}>{hint}</p>
 
-      <div
-        className={
-          darkMode
-            ? "relative overflow-hidden rounded-2xl border border-slate-800 bg-black"
-            : "relative overflow-hidden rounded-2xl border border-slate-200 bg-black"
-        }
-      >
+      <div className="relative overflow-hidden rounded-3xl bg-ink-950 shadow-card">
         <video
           ref={videoRef}
-          className={`aspect-video w-full object-cover ${cameraActive ? "block" : "hidden"}`}
+          className={`aspect-[4/3] w-full object-cover ${cameraActive ? "block" : "hidden"}`}
           muted
           playsInline
           autoPlay
         />
         {!cameraActive && (
-          <div className="flex aspect-video flex-col items-center justify-center gap-2 text-slate-400">
+          <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 text-ink-400">
             {scanSuccess ? (
               <>
-                <CheckCircle2 size={40} className="text-emerald-400" />
-                <p className="text-sm text-emerald-400">読み取り成功</p>
+                <CheckCircle2 size={44} className="text-brand-400" />
+                <p className="text-sm font-semibold text-brand-300">読み取りました</p>
               </>
             ) : (
               <>
-                <ScanLine size={40} className="opacity-40" />
-                <p className="text-sm">カメラプレビュー</p>
+                <ScanLine size={44} className="opacity-50" />
+                <p className="text-sm">下のボタンでカメラを起動します</p>
               </>
             )}
           </div>
         )}
         {cameraActive && (
           <>
-            <div className="pointer-events-none absolute inset-8 rounded-xl border-2 border-dashed border-emerald-400/80" />
-            <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-xs font-medium text-emerald-300">
-              コードを枠内に合わせてください
+            {/* 読み取る範囲を示す四隅の目印 */}
+            <div className="pointer-events-none absolute inset-8 sm:inset-12">
+              <span className="absolute left-0 top-0 h-8 w-8 rounded-tl-2xl border-l-4 border-t-4 border-brand-400" />
+              <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-2xl border-r-4 border-t-4 border-brand-400" />
+              <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-4 border-l-4 border-brand-400" />
+              <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-2xl border-b-4 border-r-4 border-brand-400" />
+            </div>
+            <p className="pointer-events-none absolute bottom-4 left-0 right-0 text-center text-sm font-medium text-white drop-shadow">
+              コードを枠の中に合わせてください
             </p>
           </>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2.5">
         {!cameraActive ? (
           <button
             type="button"
             onClick={startCamera}
             disabled={disabled || startingCamera || scanSuccess}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+            className={`${primaryButton} min-h-14 text-base`}
           >
             {startingCamera ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={20} className="animate-spin" />
             ) : (
-              <Camera size={16} />
+              <Camera size={20} />
             )}
             カメラで読み取る
           </button>
@@ -297,10 +271,10 @@ export function BarcodeScanner({
             type="button"
             onClick={stopCamera}
             disabled={disabled}
-            className={buttonClass}
+            className={`${secondaryButton(darkMode)} min-h-14 text-base`}
           >
-            <X size={16} />
-            カメラを停止
+            <X size={20} />
+            カメラを止める
           </button>
         )}
 
@@ -318,18 +292,18 @@ export function BarcodeScanner({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || decodingFile || scanSuccess}
-          className={buttonClass}
+          className={secondaryButton(darkMode)}
         >
           {decodingFile ? (
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={18} className="animate-spin" />
           ) : (
-            <ImageIcon size={16} />
+            <ImageIcon size={18} />
           )}
           写真から読み取る
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2">
         <input
           value={manualCode}
           onChange={(e) => setManualCode(e.target.value)}
@@ -337,20 +311,25 @@ export function BarcodeScanner({
             if (e.key === "Enter") submitManual();
           }}
           disabled={disabled || scanSuccess}
-          placeholder="コードを手入力（型番・JANなど）"
+          placeholder="コードを入力（型番・JAN）"
+          enterKeyHint="search"
           className={inputClass}
         />
         <button
           type="button"
           onClick={submitManual}
           disabled={disabled || !manualCode.trim() || scanSuccess}
-          className="shrink-0 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          className={`${primaryButton} shrink-0`}
         >
           検索
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
