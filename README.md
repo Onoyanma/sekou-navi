@@ -96,6 +96,10 @@ npm run lint
 npx tsc --noEmit
 ```
 
+### 精度評価
+
+型番ラベル写真に対する OCR・型番推定の精度（Top-k 正解率・文字誤り率・処理時間）を測るスクリプトを用意しています。詳しくは [backend/evaluation/README.md](backend/evaluation/README.md) を参照してください。
+
 GitHub に push すると、GitHub Actions で上記のテスト・Lint・型チェック・本番ビルドが自動で実行されます。
 
 ## 工夫した点

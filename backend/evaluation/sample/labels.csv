@@ -1,0 +1,7 @@
+image,model_number,maker,ocr_texts
+sample_01.jpg,YH51R,TOTO,TOTO|YH51R|MADE IN JAPAN
+sample_02.jpg,TCF8GM33,TOTO,TOTO|TCF8GM33|ウォシュレット
+sample_03.jpg,VD-15ZC13,三菱電機,MITSUBISHI|VD-15ZC13|換気扇
+sample_04.jpg,LH-1234,LIXIL,LIXIL|品番|LH-I234
+sample_05.jpg,CWA-12,LIXIL,INAX|CWA-12
+sample_06.jpg,FY-24C7,Panasonic,Panasonic|FY-24C7
