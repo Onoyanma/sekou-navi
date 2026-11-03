@@ -55,3 +55,62 @@ class EvaluationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CatalogMatchingTest(unittest.TestCase):
+    CATALOG = [
+        {"model_number": "AB-100", "maker": "X"},
+        {"model_number": "CD-200", "maker": "Y"},
+        {"model_number": "EF-300", "maker": "Y"},
+    ]
+
+    @staticmethod
+    def fake_score(product, candidates, maker, hints):
+        # 型番が候補と完全一致なら 100、メーカー一致だけなら 28
+        names = {name for name, _ in candidates}
+        if product["model_number"] in names:
+            return 100.0, ["model"], product["model_number"]
+        return (28.0 if maker == product["maker"] else 0.0), [], ""
+
+    def evaluate(self, expected, ocr_texts, maker=""):
+        from evaluation.evaluate_ocr import Case, evaluate_case
+
+        case = Case(image="x.jpg", model_number=expected, ocr_texts=ocr_texts)
+        return evaluate_case(
+            case,
+            Path("."),
+            read_text=lambda path: [],
+            extract_candidates=lambda texts: [(t, 50) for t in texts],
+            detect_maker=lambda texts: maker,
+            catalog=self.CATALOG,
+            score_product=self.fake_score,
+        )
+
+    def test_exact_match_is_ranked_first(self):
+        result = self.evaluate("CD-200", ["CD-200"])
+        self.assertEqual(result.product_rank, 1)
+        self.assertEqual(result.closed_set_score, 100.0)
+
+    def test_ties_are_counted_against_us(self):
+        # メーカーだけ一致する 2 商品は同点なので、どちらも 1 位とは言えない
+        result = self.evaluate("CD-200", ["ZZ-999"], maker="Y")
+        self.assertEqual(result.product_rank, 2)
+
+    def test_open_set_score_ignores_the_true_product(self):
+        result = self.evaluate("CD-200", ["CD-200"], maker="Y")
+        self.assertEqual(result.open_set_top_score, 28.0)
+
+    def test_summary_reports_false_accept_rate(self):
+        from evaluation.evaluate_ocr import summarize
+
+        good = self.evaluate("CD-200", ["CD-200"])
+        bad = self.evaluate("AB-100", ["CD-200"])  # 正解が登録されていなくても別商品が 100 点
+        metrics = summarize([good, bad], threshold=50)
+        self.assertAlmostEqual(metrics["product_top1_accuracy"], 0.5)
+        self.assertAlmostEqual(metrics["false_accept_rate"], 0.5)
+
+    def test_build_catalog_dedupes_by_normalized_model(self):
+        from evaluation.evaluate_ocr import Case, build_catalog
+
+        cases = [Case("a.jpg", "SL-013BK"), Case("b.jpg", "sl013bk")]
+        self.assertEqual(len(build_catalog(cases)), 1)
